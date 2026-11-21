@@ -17,6 +17,24 @@
 
 #define FPS 60
 
+static void delay_frame(const struct timespec *start,
+						const struct timespec *stop)
+{
+	const long frame_ns = 1000000000L / FPS;
+	long elapsed_ns =
+		(stop->tv_sec - start->tv_sec) * 1000000000L +
+		stop->tv_nsec - start->tv_nsec;
+	long remaining_ns = frame_ns - elapsed_ns;
+
+	if (remaining_ns > 0) {
+		struct timespec delay = {
+			.tv_sec = remaining_ns / 1000000000L,
+			.tv_nsec = remaining_ns % 1000000000L,
+		};
+		nanosleep(&delay, NULL);
+	}
+}
+
 int main(){
 
 	buffer *buf = &(buffer){ .fbp = NULL };
@@ -32,7 +50,6 @@ int main(){
     float angle = 0;
     float dangle = (M_2_PI)/FPS;
 
-	const long frame_ns = 1000000000L / FPS;
 	struct timespec start, stop;
 
     while (1){
@@ -45,17 +62,7 @@ int main(){
 
         clock_gettime(CLOCK_MONOTONIC, &stop);
 
-		long elapsed_ns =
-			(stop.tv_sec - start.tv_sec) * 1000000000L +
-			stop.tv_nsec - start.tv_nsec;
-		long remaining_ns = frame_ns - elapsed_ns;
-		if (remaining_ns > 0) {
-			struct timespec delay = {
-				.tv_sec = remaining_ns / 1000000000L,
-				.tv_nsec = remaining_ns % 1000000000L,
-			};
-			nanosleep(&delay, NULL);
-		}
+		delay_frame(&start, &stop);
     }
 
 	free(test.data);
