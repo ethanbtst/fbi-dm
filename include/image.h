@@ -31,6 +31,9 @@ bool create_buffer(buffer *fb, const char *device);
 // Unmaps and closes a framebuffer
 void destroy_buffer(buffer *fb);
 
+// Loads an image supported by stb_image into an image struct
+bool load_image(image *img, const char *filename);
+
 // Loads a PPM image into an image struct with pixels and dimensions
 bool load_ppm(image *img, const char *filename);
 

@@ -33,8 +33,8 @@ int main()
 
 	image small_img = { 0 };
 	image large_img = { 0 };
-	if (!load_ppm(&small_img, opt_small_pic) ||
-		!load_ppm(&large_img, opt_big_pic)) {
+	if (!load_image(&small_img, opt_small_pic) ||
+		!load_image(&large_img, opt_big_pic)) {
 		cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
 		return 1;
 	}

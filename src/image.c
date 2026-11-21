@@ -10,10 +10,57 @@
 #include <sys/mman.h>
 #include "image.h"
 
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image_resize.h"
 #include "stb_image.h"
+
+
+bool load_image(image *image, const char *filename)
+{
+	if (image == NULL || filename == NULL)
+		return false;
+
+	image->w = 0;
+	image->h = 0;
+	image->data = NULL;
+
+	int width;
+	int height;
+	unsigned char *stbi_data =
+		stbi_load(filename, &width, &height, NULL, STBI_rgb);
+	if (stbi_data == NULL) {
+		fprintf(stderr, "Failed to load image '%s': %s\n", filename,
+				stbi_failure_reason());
+		return false;
+	}
+
+	if (width <= 0 || height <= 0 ||
+		(size_t)width > SIZE_MAX / (size_t)height ||
+		(size_t)width * (size_t)height > SIZE_MAX / sizeof(pixel)) {
+		fprintf(stderr, "Invalid image dimensions for '%s'\n", filename);
+		stbi_image_free(stbi_data);
+		return false;
+	}
+
+	size_t pixel_count = (size_t)width * (size_t)height;
+	pixel *data = malloc(pixel_count * sizeof(pixel));
+	if (data == NULL) {
+		fprintf(stderr, "Failed to allocate image data for '%s'\n", filename);
+		stbi_image_free(stbi_data);
+		return false;
+	}
+
+	for (size_t i = 0; i < pixel_count; i++) {
+		data[i].r = stbi_data[i * STBI_rgb];
+		data[i].g = stbi_data[i * STBI_rgb + 1];
+		data[i].b = stbi_data[i * STBI_rgb + 2];
+	}
+
+	stbi_image_free(stbi_data);
+	image->w = width;
+	image->h = height;
+	image->data = data;
+	return true;
+}
 
 
 bool create_buffer(buffer *fb, const char *device)
@@ -140,9 +187,6 @@ bool load_ppm(image *image, const char *filename)
 	fclose(fd);
 	return true;
 }
-
-
-
 
 void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)
 {
