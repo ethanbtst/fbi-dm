@@ -35,7 +35,7 @@ void destroy_buffer(buffer *fb);
 bool load_image(image *img, const char *filename);
 
 // Loads a PPM image into an image struct with pixels and dimensions
-bool load_ppm(image *img, const char *filename);
+// bool load_ppm(image *img, const char *filename);
 
 // Draws a given image onto a given framebuffer
 void draw_image(buffer *buffer, const image *image, int x_offset, int y_offset);

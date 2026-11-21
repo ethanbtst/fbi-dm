@@ -70,7 +70,6 @@ int main()
 		battery_info();
 
 	// Session Picking
-
 	session_row = cur->row;
 	session_col = cur->col;
 	sessions = get_sessions(&session_count);

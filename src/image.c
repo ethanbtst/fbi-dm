@@ -8,6 +8,7 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <math.h>
 #include "image.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -61,7 +62,6 @@ bool load_image(image *image, const char *filename)
 	image->data = data;
 	return true;
 }
-
 
 bool create_buffer(buffer *fb, const char *device)
 {
@@ -123,69 +123,25 @@ void destroy_buffer(buffer *fb)
 	fb->fd = -1;
 }
 
-bool load_ppm(image *image, const char *filename)
+image *rotate_image(const image *img, const float angle)
 {
-	if (image == NULL || filename == NULL)
-		return false;
+	int h = img->h;
+	int w = img->w;
+	float cx = w/2;
+	float cy = h/2;
+	int px;
+	int py;
 
-	FILE *fd = fopen(filename, "rb");
+	image out[img->w * img->h];
 
-	if (!fd) {
-		perror("Failed to open PPM");
-		return false;
-	}
-
-	char type[5];
-	if (fscanf(fd, "%4s", type) != 1 ||
-		fscanf(fd, "%d %d %*d", &image->w, &image->h) != 2 || image->w <= 0 ||
-		image->h <= 0 || (size_t)image->w > SIZE_MAX / (size_t)image->h ||
-		(size_t)image->w * (size_t)image->h > SIZE_MAX / sizeof(pixel)) {
-		fclose(fd);
-		return false;
-	}
-	pixel *data = malloc(image->w * image->h * sizeof(pixel));
-	if (data == NULL) {
-		fclose(fd);
-		perror("Failed to allocate PPM data");
-		return false;
-	}
-
-	if (strcmp(type, "P6") == 0) {
-		fgetc(fd);
-		if (fread(data, sizeof(pixel), image->w * image->h, fd) !=
-			(size_t)image->w * (size_t)image->h) {
-			fclose(fd);
-			free(data);
-			perror("Bad PPM File: Pixels do not fit dimensions");
-			return false;
+	for(size_t x = 0; x < w; ++x){
+		for(size_t y = 0; y < h; ++y){
+			px = x - cx;
+			py = y - cy;
 		}
-	} else if (strcmp(type, "P3") == 0) {
-		for (int y = 0; y < image->h; y++) {
-			for (int x = 0; x < image->w; x++) {
-				int r, g, b;
-
-				if (fscanf(fd, "%d %d %d", &r, &g, &b) != 3) {
-					fclose(fd);
-					free(data);
-					perror("Bad PPM File: Pixels do not fit dimensions");
-					return false;
-				}
-
-				data[y * image->w + x].r = (uint8_t)r;
-				data[y * image->w + x].g = (uint8_t)g;
-				data[y * image->w + x].b = (uint8_t)b;
-			}
-		}
-	} else {
-		perror("Bad PPM file: Invalid PPM type");
-		fclose(fd);
-		free(data);
-		return false;
 	}
 
-	image->data = data;
-	fclose(fd);
-	return true;
+	return out;
 }
 
 void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)
