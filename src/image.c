@@ -1,5 +1,3 @@
-// Helpers to for image processing (PPM only right now)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +7,58 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include "image.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+
+bool load_image(image *image, const char *filename)
+{
+	if (image == NULL || filename == NULL)
+		return false;
+
+	image->w = 0;
+	image->h = 0;
+	image->data = NULL;
+
+	int width;
+	int height;
+	unsigned char *stbi_data =
+		stbi_load(filename, &width, &height, NULL, STBI_rgb);
+	if (stbi_data == NULL) {
+		fprintf(stderr, "Failed to load image '%s': %s\n", filename,
+				stbi_failure_reason());
+		return false;
+	}
+
+	if (width <= 0 || height <= 0 ||
+		(size_t)width > SIZE_MAX / (size_t)height ||
+		(size_t)width * (size_t)height > SIZE_MAX / sizeof(pixel)) {
+		fprintf(stderr, "Invalid image dimensions for '%s'\n", filename);
+		stbi_image_free(stbi_data);
+		return false;
+	}
+
+	size_t pixel_count = (size_t)width * (size_t)height;
+	pixel *data = malloc(pixel_count * sizeof(pixel));
+	if (data == NULL) {
+		fprintf(stderr, "Failed to allocate image data for '%s'\n", filename);
+		stbi_image_free(stbi_data);
+		return false;
+	}
+
+	for (size_t i = 0; i < pixel_count; i++) {
+		data[i].r = stbi_data[i * STBI_rgb];
+		data[i].g = stbi_data[i * STBI_rgb + 1];
+		data[i].b = stbi_data[i * STBI_rgb + 2];
+	}
+
+	stbi_image_free(stbi_data);
+	image->w = width;
+	image->h = height;
+	image->data = data;
+	return true;
+}
 
 bool create_buffer(buffer *fb, const char *device)
 {
@@ -68,71 +118,6 @@ void destroy_buffer(buffer *fb)
 
 	*fb = (buffer){ .fd = -1 };
 	fb->fd = -1;
-}
-
-bool load_ppm(image *image, const char *filename)
-{
-	if (image == NULL || filename == NULL)
-		return false;
-
-	FILE *fd = fopen(filename, "rb");
-
-	if (!fd) {
-		perror("Failed to open PPM");
-		return false;
-	}
-
-	char type[5];
-	if (fscanf(fd, "%4s", type) != 1 ||
-		fscanf(fd, "%d %d %*d", &image->w, &image->h) != 2 || image->w <= 0 ||
-		image->h <= 0 || (size_t)image->w > SIZE_MAX / (size_t)image->h ||
-		(size_t)image->w * (size_t)image->h > SIZE_MAX / sizeof(pixel)) {
-		fclose(fd);
-		return false;
-	}
-	pixel *data = malloc(image->w * image->h * sizeof(pixel));
-	if (data == NULL) {
-		fclose(fd);
-		perror("Failed to allocate PPM data");
-		return false;
-	}
-
-	if (strcmp(type, "P6") == 0) {
-		fgetc(fd);
-		if (fread(data, sizeof(pixel), image->w * image->h, fd) !=
-			(size_t)image->w * (size_t)image->h) {
-			fclose(fd);
-			free(data);
-			perror("Bad PPM File: Pixels do not fit dimensions");
-			return false;
-		}
-	} else if (strcmp(type, "P3") == 0) {
-		for (int y = 0; y < image->h; y++) {
-			for (int x = 0; x < image->w; x++) {
-				int r, g, b;
-
-				if (fscanf(fd, "%d %d %d", &r, &g, &b) != 3) {
-					fclose(fd);
-					free(data);
-					perror("Bad PPM File: Pixels do not fit dimensions");
-					return false;
-				}
-
-				data[y * image->w + x].r = (uint8_t)r;
-				data[y * image->w + x].g = (uint8_t)g;
-				data[y * image->w + x].b = (uint8_t)b;
-			}
-		}
-	} else {
-		perror("Bad PPM file: Invalid PPM type");
-		fclose(fd);
-		free(data);
-		return false;
-	}
-
-	image->data = data;
-	fclose(fd);
-	return true;
 }
 
 void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)

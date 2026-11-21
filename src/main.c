@@ -11,9 +11,9 @@
 #include <locale.h>
 #include <grp.h>
 #include <pwd.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
-
 int main()
 {
 	default_config();
@@ -33,8 +33,8 @@ int main()
 
 	image small_img = { 0 };
 	image large_img = { 0 };
-	if (!load_ppm(&small_img, opt_small_pic) ||
-		!load_ppm(&large_img, opt_big_pic)) {
+	if (!load_image(&small_img, opt_small_pic) ||
+		!load_image(&large_img, opt_big_pic)) {
 		cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
 		return 1;
 	}
@@ -70,7 +70,6 @@ int main()
 		battery_info();
 
 	// Session Picking
-
 	session_row = cur->row;
 	session_col = cur->col;
 	sessions = get_sessions(&session_count);
@@ -107,7 +106,7 @@ int main()
 		}
 
 		if (pam_open_session(pamh, 0) != PAM_SUCCESS) {
-			fprintf(stderr, "pam_open_session failed\n");
+			perror("pam_open_session failed");
 			pam_setcred(pamh, PAM_DELETE_CRED);
 			pam_end(pamh, PAM_SESSION_ERR);
 			cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
