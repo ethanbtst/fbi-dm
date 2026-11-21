@@ -175,6 +175,46 @@ void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)
 		return;
 
 	int bytes_per_pixel = fb->bpp / 8;
+
+	if (bytes_per_pixel == 3 || bytes_per_pixel == 4) {
+		unsigned char *row =
+			malloc((size_t)img->w * (size_t)bytes_per_pixel);
+		if (row == NULL)
+			return;
+
+		for (int sy = 0; sy < img->h; sy++) {
+			int dy = sy + y_offset;
+			if (dy < 0 || dy >= fb->h)
+				continue;
+
+			int sx0 = x_offset < 0 ? -x_offset : 0;
+			int sx1 = img->w;
+			if (x_offset + sx1 > fb->w)
+				sx1 = fb->w - x_offset;
+			if (sx0 >= sx1)
+				continue;
+
+			for (int sx = sx0; sx < sx1; sx++) {
+				pixel p = img->data[(size_t)sy * img->w + sx];
+				size_t offset = (size_t)(sx - sx0) * bytes_per_pixel;
+				row[offset] = p.b;
+				row[offset + 1] = p.g;
+				row[offset + 2] = p.r;
+				if (bytes_per_pixel == 4)
+					row[offset + 3] = 255;
+			}
+
+			size_t destination =
+				(size_t)dy * fb->line_length +
+				(size_t)(x_offset + sx0) * bytes_per_pixel;
+			memcpy(fb->fbp + destination, row,
+				   (size_t)(sx1 - sx0) * bytes_per_pixel);
+		}
+
+		free(row);
+		return;
+	}
+
 	for (int sy = 0; sy < img->h; sy++) {
 		int dy = sy + y_offset;
 		if (dy < 0 || dy >= fb->h)
