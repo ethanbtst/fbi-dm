@@ -24,7 +24,7 @@ int main(){
 		return 1;
 
 	image test = { 0 };
-	if (!load_image(&test, "lilyb/2.ppm")) {
+	if (!load_image(&test, "img/distro_logos/Debian.png")) {
 		destroy_buffer(buf);
 		return 1;
 	}
