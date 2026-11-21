@@ -11,8 +11,10 @@
 #include <locale.h>
 #include <grp.h>
 #include <pwd.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+#include <math.h>
 
 int main()
 {
@@ -52,6 +54,12 @@ int main()
 	for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
 		draw_image(buf, &small_img, i * small_img.w, 0);
 	draw_image(buf, &large_img, 0, small_img.h);
+
+	image* rotated = rotate_image(&large_img, (2*M_PI)/6);
+	draw_image(buf, rotated, large_img.h * 2, small_img.h);
+	free(rotated->data);
+	free(rotated);
+
 
 	// Info printing
 	if (strlen(opt_top_text) != 0){

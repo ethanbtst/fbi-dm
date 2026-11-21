@@ -9,7 +9,7 @@ IDIR = include
 BDIR = build
 
 CPPFLAGS := -I$(IDIR) ${shell $(PKG_CONFIG) --cflags $(PKGS)}
-CFLAGS := -Wall -Wextra 
+CFLAGS := -Wall -Wextra
 DEBUG_FLAGS := -Wall -Wextra -g
 LDLIBS := $(shell $(PKG_CONFIG) --libs $(PKGS))
 

@@ -123,25 +123,51 @@ void destroy_buffer(buffer *fb)
 	fb->fd = -1;
 }
 
-image *rotate_image(const image *img, const float angle)
+image *rotate_image(const image *img, float angle)
 {
-	int h = img->h;
-	int w = img->w;
-	float cx = w/2;
-	float cy = h/2;
-	int px;
-	int py;
+    if (img == NULL || img->data == NULL)
+        return NULL;
 
-	image out[img->w * img->h];
+    image *out = malloc(sizeof(*out));
+    if (out == NULL)
+        return NULL;
 
-	for(size_t x = 0; x < w; ++x){
-		for(size_t y = 0; y < h; ++y){
-			px = x - cx;
-			py = y - cy;
-		}
-	}
+    out->w = img->w;
+    out->h = img->h;
 
-	return out;
+    size_t count = (size_t)out->w * (size_t)out->h;
+    out->data = calloc(count, sizeof(*out->data));
+    if (out->data == NULL) {
+        free(out);
+        return NULL;
+    }
+
+    float cx = (out->w - 1) / 2.0f;
+    float cy = (out->h - 1) / 2.0f;
+
+    float cosine = cosf(angle);
+    float sine = sinf(angle);
+
+    for (int y = 0; y < out->h; ++y) {
+        for (int x = 0; x < out->w; ++x) {
+            float dx = x - cx;
+            float dy = y - cy;
+
+            float source_x = cosine * dx + sine * dy + cx;
+            float source_y = -sine * dx + cosine * dy + cy;
+
+            int sx = (int)roundf(source_x);
+            int sy = (int)roundf(source_y);
+
+            if (sx >= 0 && sx < img->w &&
+                sy >= 0 && sy < img->h) {
+                out->data[y * out->w + x] =
+                    img->data[sy * img->w + sx];
+            }
+        }
+    }
+
+    return out;
 }
 
 void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)
