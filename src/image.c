@@ -1,5 +1,3 @@
-// Helpers to for image processing (PPM only right now)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

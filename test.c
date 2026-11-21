@@ -24,13 +24,13 @@ int main(){
 		return 1;
 
 	image test = { 0 };
-	if (!load_image(&test, "img/distro_logos/proxmox.png")) {
+	if (!load_image(&test, "lilyb/2.ppm")) {
 		destroy_buffer(buf);
 		return 1;
 	}
 
     float angle = 0;
-    float dangle = (2*M_PI)/360.0;
+    float dangle = (M_2_PI)/FPS;
 
 	const long frame_ns = 1000000000L / FPS;
 	struct timespec start, stop;
@@ -39,9 +39,7 @@ int main(){
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         image* rotated = rotate_image(&test, angle += dangle);
-		if (rotated == NULL)
-			break;
-        draw_image(buf, rotated, 300, 300);
+        draw_image(buf, rotated, 200, 200);
         free(rotated->data);
         free(rotated);
 
