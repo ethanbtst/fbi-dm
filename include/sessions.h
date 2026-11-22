@@ -10,8 +10,6 @@ typedef struct {
 	char *type;
 } session;
 
-extern int session_row;
-extern int session_col;
 extern int session_cur;
 extern size_t session_count;
 extern session *sessions;

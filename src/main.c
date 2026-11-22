@@ -1,9 +1,3 @@
-#include "term_utils.h"
-#include "pam.h"
-#include "config.h"
-#include "sessions.h"
-#include "image.h"
-#include "info.h"
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -14,10 +8,63 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
+#include <signal.h>
+
+#include "pam.h"
+#include "config.h"
+#include "sessions.h"
+#include "image.h"
+#include "info.h"
+
+#define FPS 24
+
+pthread_t keyThread, displayThread;
+static volatile sig_atomic_t display_running;
+
+static void delay_frame(const struct timespec *start,
+						const struct timespec *stop);
+
+static void *display_loop(void *input_buffers)
+{
+	while (display_running) {
+		struct timespec start, stop;
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		print_all_info(input_buffers);
+		clock_gettime(CLOCK_MONOTONIC, &stop);
+		delay_frame(&start, &stop);
+	}
+	return NULL;
+}
+
+static void *keyboard_loop(void *buffers)
+{
+	key_loop(buffers, 2);
+	display_running = 0;
+	return NULL;
+}
+
+static void delay_frame(const struct timespec *start,
+						const struct timespec *stop)
+{
+	const long frame_ns = 1000000000L / FPS;
+	long elapsed_ns =
+		(stop->tv_sec - start->tv_sec) * 1000000000L +
+		stop->tv_nsec - start->tv_nsec;
+	long remaining_ns = frame_ns - elapsed_ns;
+
+	if (remaining_ns > 0) {
+		struct timespec delay = {
+			.tv_sec = remaining_ns / 1000000000L,
+			.tv_nsec = remaining_ns % 1000000000L,
+		};
+		nanosleep(&delay, NULL);
+	}
+}
+
 int main()
 {
+	// Configs
 	default_config();
-
 	setup_term();
 	get_config();
 	setlocale(LC_ALL, "");
@@ -31,67 +78,60 @@ int main()
 		return 1;
 	}
 
+	// Image stuff
 	image small_img = { 0 };
 	image large_img = { 0 };
-	if (!load_image(&small_img, opt_small_pic) ||
-		!load_image(&large_img, opt_big_pic)) {
-		cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
-		return 1;
-	}
 
-	// Positioning
-	struct winsize w;
-	ioctl(STDERR_FILENO, TIOCGWINSZ, &w);
-	int font_height = buf->h / w.ws_row;
-	int font_width = buf->w / w.ws_col;
+	if (!load_image(&small_img, opt_small_pic))
+		load_image(&small_img, "/opt/fb-dm/img/logo_linux_clut224.ppm");
+	if (!load_image(&large_img, opt_big_pic))
+		load_image(&large_img, "/opt/fb-dm/img/test.png");
 
-	int right = large_img.w / font_width + 2;
-	move((small_img.h / font_height) + 2, right);
-
-	// Display images
 	for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
 		draw_image(buf, &small_img, i * small_img.w, 0);
 	draw_image(buf, &large_img, 0, small_img.h);
 
-	// Info printing
-	if (strlen(opt_top_text) != 0){
-		printf("%s", opt_top_text);
-		move(cur->row + 2, right);
-	}
-	if (opt_hostname)
-		file_info("/etc/hostname", "%254s", "[%s]");
-	if (opt_kernel)
-		file_info("/proc/version", "%*s %*s %254s", "Kernel: %s");
-	if (strlen(opt_date) != 0)
-		time_info("Date", opt_date);
-	if (strlen(opt_time) != 0)
-		time_info("Time", opt_time);
-	if (opt_battery)
-		battery_info();
+	// Text positioning
+	struct winsize w;
+	ioctl(STDERR_FILENO, TIOCGWINSZ, &w);
+	int font_height = buf->h / w.ws_row;
+	int font_width = buf->w / w.ws_col;
+	int right = large_img.w / font_width + 2;
 
-	// Session Picking
-	session_row = cur->row;
-	session_col = cur->col;
 	sessions = get_sessions(&session_count);
 	if ((session_cur = get_session_index(session_count)) == -1)
 		session_cur = (int)session_count;
-	session_info(sessions, session_cur, session_count);
 
-	move(((small_img.h + large_img.h) / font_height) + 1, 0);
-	printf("[F1] Shutdown [F2] Reboot ");
-
-	if (opt_brightness) {
-		set_brightness_values();
-		printf("[F3] Increase brightness [F4] Decrease brightness\n\n");
-	} else
-		printf("\n\n");
+	set_cursors_info((small_img.h / font_height) + 2,
+					right, ((small_img.h + large_img.h) / font_height) + 1);
 
 	// Text input
 	input_buffer in[2];
 	in[0] = (input_buffer){ "login", { 0 }, true };
 	in[1] = (input_buffer){ "password", { 0 }, false };
 
-	key_loop(in, 2);
+
+	// Main drawing/keyboard threads
+	display_running = 1;
+	if (pthread_create(&displayThread, NULL, display_loop, &in) != 0) {
+		perror("Failed to create display thread");
+		cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+		return 1;
+	}
+	if (pthread_create(&keyThread, NULL, keyboard_loop, &in) != 0) {
+		perror("Failed to create keyboard thread");
+		display_running = 0;
+		pthread_join(displayThread, NULL);
+		cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+		return 1;
+	}
+
+	pthread_join(displayThread, NULL);
+	display_running = 0;
+	pthread_join(keyThread, NULL);
+
+	pthread_cancel(displayThread);
+	pthread_cancel(keyThread);
 
 	// Auth
 	pam_handle_t *pamh = NULL;

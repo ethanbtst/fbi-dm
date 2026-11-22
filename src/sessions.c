@@ -1,15 +1,13 @@
-
-#include "sessions.h"
 #include <glob.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
-#include "main_utils.h"
 
-int session_row = 0;
-int session_col = 0;
+#include "sessions.h"
+#include "parser.h"
+
 int session_cur;
 size_t session_count;
 session *sessions;

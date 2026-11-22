@@ -1,15 +1,19 @@
-#include "term_utils.h"
-#include "sessions.h"
-#include "info.h"
-#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <pthread.h>
+
+#include "term.h"
+#include "sessions.h"
+#include "info.h"
+#include "config.h"
 
 cursor *cur = &(cursor){ 1, 1 };
 struct termios current_term;
 struct termios saved_term;
+size_t cur_buff = 0;
 
 void toggle_echo(bool enabled)
 {
@@ -35,11 +39,15 @@ void setup_term()
 	tcsetattr(STDIN_FILENO, TCSANOW, &current_term);
 }
 
-void move_cur(cursor *cur, int row, int col)
+bool move_cur(cursor *cur, int row, int col)
 {
+	if (row < 0 || col < 0)
+		return false;
+
 	cur->col = col;
 	cur->row = row;
 	printf("\033[%d;%dH", row, col);
+	return true;
 }
 
 cursor get_cur(void)
@@ -83,18 +91,7 @@ cursor get_cur(void)
 			}
 		}
 	}
-
 	return position;
-}
-
-int get_row(void)
-{
-	return get_cur().row;
-}
-
-int get_col(void)
-{
-	return get_cur().col;
 }
 
 void update_session(int change)
@@ -102,9 +99,7 @@ void update_session(int change)
 	if (sessions == NULL)
 		return;
 
-	*cur = get_cur();
-	cursor saved = *cur;
-	move(session_row, session_col);
+	move(info_curs[CUR_SESSION].row, info_curs[CUR_SESSION].col);
 	clear_line();
 
 	int session_total = (int)session_count + 1;
@@ -112,26 +107,6 @@ void update_session(int change)
 	if (session_cur < 0)
 		session_cur += session_total;
 	session_info(sessions, session_cur, session_count);
-
-	move(saved.row, saved.col);
-	fflush(stdout);
-}
-
-void readline(cursor *cur, char *buff)
-{
-	int ch;
-	while ((ch = getchar()) != '\n') {
-		if (ch >= 32 && ch <= 126) {
-			strcat(buff, (char *)&ch);
-		} else if (ch == '\b' || ch == KEY_BACKSPACE) {
-			if (strnlen(buff, sizeof(buff)) == 0)
-				continue;
-			buff[strlen(buff) - 1] = '\0';
-		}
-	}
-	buff[strlen(buff)] = '\0';
-	cur->row = cur->row + 1;
-	cur->col = cur->col + strlen(buff);
 }
 
 int readkey(void)
@@ -191,45 +166,22 @@ int readkey(void)
 
 void key_loop(input_buffer *input_buffers, size_t input_count)
 {
-	size_t cur_buff = 0;
-	printf("%s: ", input_buffers[0].name);
-	fflush(stdout);
-	no_echo();
-	*cur = get_cur();
-
 	while (cur_buff < input_count) {
 		int ch = readkey();
 
 		switch (ch) {
 		case '\n':
 			cur_buff++;
-			if (cur_buff < input_count) {
-				printf("\n%s: ", input_buffers[cur_buff].name);
-				fflush(stdout);
-			} else {
-				printf("\n");
-				fflush(stdout);
-				echo();
-			}
-			if (cur_buff < input_count)
-				*cur = get_cur();
+			info_curs[CUR_INPUT].row++;
 			break;
 
 		case '\b':
-		case KEY_BACKSPACE: {
-			char *buffer = input_buffers[cur_buff].buffer;
-			size_t length =
-				strnlen(buffer, sizeof(input_buffers[cur_buff].buffer));
-			if (length > 0) {
-				buffer[length - 1] = '\0';
-				if (input_buffers[cur_buff].show) {
-					printf("\b \b");
-					fflush(stdout);
-				}
-				*cur = get_cur();
-			}
+		case KEY_BACKSPACE:
+			char *buff = input_buffers[cur_buff].buffer;
+			size_t len = strnlen(buff, sizeof(input_buffers[cur_buff].buffer));
+			if (len > 0) 
+				buff[len - 1] = '\0';
 			break;
-		}
 
 		case KEY_LEFT:
 			update_session(1);
@@ -248,37 +200,29 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
 			break;
 
 		case KEY_F3:
-			echo();
 			if (opt_brightness)
 				update_brightness(1);
-			no_echo();
 			break;
 
 		case KEY_F4:
-			echo();
 			if (opt_brightness)
 				update_brightness(-1);
-			no_echo();
 			break;
 
 		default:
 			if (ch >= 32 && ch <= 126) {
-				char *buffer = input_buffers[cur_buff].buffer;
-				size_t length =
-					strnlen(buffer, sizeof(input_buffers[cur_buff].buffer));
-				if (length + 1 < sizeof(input_buffers[cur_buff].buffer)) {
-					buffer[length] = (char)ch;
-					buffer[length + 1] = '\0';
-					if (input_buffers[cur_buff].show) {
-						putchar(ch);
-						fflush(stdout);
-					}
-					*cur = get_cur();
+				char *buff = input_buffers[cur_buff].buffer;
+				size_t len =
+					strnlen(buff, sizeof(input_buffers[cur_buff].buffer));
+				if (len + 1 < sizeof(input_buffers[cur_buff].buffer)) {
+					buff[len] = (char)ch;
+					buff[len + 1] = '\0';
 				}
 			}
 			break;
 		}
 	}
+	printf("\n");
 }
 
 void cleanup(image *images[], int image_count, struct termios *term,

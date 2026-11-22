@@ -1,6 +1,7 @@
 #include <string.h>
 #include <ctype.h>
-#include "main_utils.h"
+
+#include "parser.h"
 
 char *trim(char *text)
 {
