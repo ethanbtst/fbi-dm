@@ -1,9 +1,9 @@
-#include "config.h"
-#include "main_utils.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+
+#include "config.h"
+#include "parser.h"
 
 char opt_small_pic[255];
 char opt_big_pic[255];
@@ -17,13 +17,13 @@ bool opt_brightness;
 
 void default_config()
 {
-	strcpy(opt_small_pic, "/opt/fb-dm/img/logo_linux_clut224.ppm");
+	strcpy(opt_small_pic, "/opt/fbi-dm/img/logo_linux_clut224.ppm");
 	strcpy(opt_big_pic, "distro");
 	strcpy(opt_top_text, "Welcome!");
 	opt_hostname = true;
 	opt_kernel = true;
 	strcpy(opt_date, "%A %B %d, %Y");
-	strcpy(opt_time, "%R");
+	strcpy(opt_time, "%R:%S");
 	opt_battery = false;
 	opt_brightness = false;
 }
@@ -44,14 +44,14 @@ void set_distro_logo()
 
 		if (strcasecmp(option, "id") == 0)
 			snprintf(opt_big_pic, sizeof(opt_big_pic),
-					 "/opt/fb-dm/img/distro_logos/%s.ppm", value);
+					 "/opt/fbi-dm/img/distro_logos/%s.ppm", value);
 	}
 	fclose(fd);
 }
 
 void get_config()
 {
-	FILE *fd = fopen("/opt/fb-dm/config.ini", "r");
+	FILE *fd = fopen("/opt/fbi-dm/config.ini", "r");
 
 	if (!fd)
 		return;

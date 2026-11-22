@@ -1,19 +1,16 @@
 # .DEFAULT_GOAL := all
 
 CC = gcc
-PKG_CONFIG ?= pkg-config
-PKGS = pam
 
 CDIR = src
 IDIR = include
 BDIR = build
 
-CPPFLAGS := -I$(IDIR) ${shell $(PKG_CONFIG) --cflags $(PKGS)}
-CFLAGS := -Wall -Wextra
-DEBUG_FLAGS := -Wall -Wextra -g
-LDLIBS := $(shell $(PKG_CONFIG) --libs $(PKGS))
+CFLAGS := -Wall -Wextra -I$(IDIR) -pthread -O3 
+DEBUG_FLAGS := -Wall -Wextra -g -pthread
+LDLIBS := -lm -lpam
 
-TARGET = fb-dm
+TARGET = fbi-dm
 DEPS = $(wildcard $(IDIR)/*.h)
 SRCS = $(wildcard $(CDIR)/*.c)
 OBJS = $(SRCS:$(CDIR)/%.c=$(BDIR)/%.o)
@@ -39,11 +36,11 @@ clean:
 	rm -f $(TARGET)
 
 uninstall:
-	rm -rf /opt/fb-dm
+	rm -rf /opt/fbi-dm
 
 install:
-	mkdir -p /opt/fb-dm
-	cp -f fb-dm /opt/fb-dm
-	cp -rf img /opt/fb-dm
-	cp config.ini /opt/fb-dm
-	cp -f fb-dm@.service /usr/lib/systemd/system
+	mkdir -p /opt/fbi-dm
+	cp -f fbi-dm /opt/fbi-dm
+	cp -rf img /opt/fbi-dm
+	cp config.ini /opt/fbi-dm
+	cp -f fbi-dm@.service /usr/lib/systemd/system

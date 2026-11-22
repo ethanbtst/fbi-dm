@@ -6,7 +6,7 @@ Conflicts=getty@%i.service
 
 [Service]
 Type=idle
-ExecStart=/opt/fb-dm/fb-dm
+ExecStart=/opt/fbi-dm/fbi-dm
 StandardInput=tty
 TTYPath=/dev/%I
 TTYReset=yes

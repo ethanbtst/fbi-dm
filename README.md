@@ -1,11 +1,11 @@
 <div align="center">
 	<h1>
-		fb-dm
+		fbi-dm
 	</h1>
 </div>
 
 <div align="center">
-	Name not finalized
+	Framebuffer image/info display manager
 </div>
 
 ## Why do this?
