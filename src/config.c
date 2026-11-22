@@ -7,6 +7,11 @@
 
 char opt_small_pic[255];
 char opt_big_pic[255];
+int  opt_small_max_h;
+int  opt_small_max_w;
+int  opt_big_max_h;
+int  opt_big_max_w;
+
 bool opt_hostname;
 bool opt_kernel;
 char opt_top_text[255];
@@ -17,84 +22,89 @@ bool opt_brightness;
 
 void default_config()
 {
-	strcpy(opt_small_pic, "/opt/fbi-dm/img/logo_linux_clut224.ppm");
-	strcpy(opt_big_pic, "distro");
-	strcpy(opt_top_text, "Welcome!");
-	opt_hostname = true;
-	opt_kernel = true;
-	strcpy(opt_date, "%A %B %d, %Y");
-	strcpy(opt_time, "%R:%S");
-	opt_battery = false;
-	opt_brightness = false;
+    strcpy(opt_small_pic, "/opt/fbi-dm/img/logo_linux_clut224.ppm");
+    strcpy(opt_big_pic, "distro");
+    opt_small_max_h = 80; 
+    opt_small_max_w = 80;
+    opt_big_max_h = 300;
+    opt_big_max_w = 300;
+
+    strcpy(opt_top_text, "Welcome!");
+    opt_hostname = true;
+    opt_kernel = true;
+    strcpy(opt_date, "%A %B %d, %Y");
+    strcpy(opt_time, "%R:%S");
+    opt_battery = false;
+    opt_brightness = false;
 }
 
 void set_distro_logo()
 {
-	FILE *fd = fopen("/etc/os-release", "r");
-	if (fd == NULL)
-		return;
+    FILE *fd = fopen("/etc/os-release", "r");
+    if (fd == NULL)
+        return;
 
-	char line[255];
-	char *option;
-	char *value;
+    char line[255];
+    char *option;
+    char *value;
 
-	while (fgets(line, sizeof(line), fd)) {
-		if (!parse_line(line, &option, &value))
-			continue;
+    while (fgets(line, sizeof(line), fd)) {
+        if (!parse_line(line, &option, &value))
+            continue;
 
-		if (strcasecmp(option, "id") == 0)
-			snprintf(opt_big_pic, sizeof(opt_big_pic),
-					 "/opt/fbi-dm/img/distro_logos/%s.ppm", value);
-	}
-	fclose(fd);
+        if (strcasecmp(option, "id") == 0)
+            snprintf(opt_big_pic, sizeof(opt_big_pic),
+                     "/opt/fbi-dm/img/distro_logos/%s.ppm", value);
+    }
+    fclose(fd);
 }
 
 void get_config()
 {
-	FILE *fd = fopen("/opt/fbi-dm/config.ini", "r");
+    FILE *fd = fopen("/opt/fbi-dm/config.ini", "r");
 
-	if (!fd)
-		return;
+    if (!fd)
+        return;
 
-	char line[255];
-	char *option;
-	char *value;
+    char line[255];
+    char *option;
+    char *value;
 
-	while (fgets(line, sizeof(line), fd)) {
-		if (!parse_line(line, &option, &value))
-			continue;
+    while (fgets(line, sizeof(line), fd)) {
+        if (!parse_line(line, &option, &value))
+            continue;
 
-		if (strcmp(option, "small_pic") == 0)
-			strcpy(opt_small_pic, value);
+        if (strcmp(option, "small_pic") == 0)
+            strcpy(opt_small_pic, value);
 
-		if (strcmp(option, "big_pic") == 0)
-			strcpy(opt_big_pic, value);
+        if (strcmp(option, "big_pic") == 0)
+            strcpy(opt_big_pic, value);
 
-		if (strcmp(option, "top_text") == 0)
-			strcpy(opt_top_text, value);
+        if (strcmp(option, "top_text") == 0)
+            strcpy(opt_top_text, value);
 
-		if (strcmp(option, "hostname") == 0)
-			if (strcmp(value, "false") == 0)
-				opt_hostname = false;
+        if (strcmp(option, "hostname") == 0)
+            if (strcmp(value, "false") == 0)
+                opt_hostname = false;
 
-		if (strcmp(option, "kernel") == 0)
-			if (strcmp(value, "false") == 0)
-				opt_kernel = false;
+        if (strcmp(option, "kernel") == 0)
+            if (strcmp(value, "false") == 0)
+                opt_kernel = false;
 
-		if (strcmp(option, "date") == 0)
-			strcpy(opt_date, value);
+        if (strcmp(option, "date") == 0)
+            strcpy(opt_date, value);
 
-		if (strcmp(option, "time") == 0)
-			strcpy(opt_time, value);
+        if (strcmp(option, "time") == 0)
+            strcpy(opt_time, value);
 
-		if (strcmp(option, "battery") == 0)
-			if (strcmp(value, "true") == 0)
-				opt_battery = true;
+        if (strcmp(option, "battery") == 0)
+            if (strcmp(value, "true") == 0)
+                opt_battery = true;
 
-		if (strcmp(option, "brightness") == 0)
-			if (strcmp(value, "true") == 0)
-				opt_brightness = true;
-	}
+        if (strcmp(option, "brightness") == 0)
+            if (strcmp(value, "true") == 0)
+                opt_brightness = true;
+    }
 
-	fclose(fd);
+    fclose(fd);
 }

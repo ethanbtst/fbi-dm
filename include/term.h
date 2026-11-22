@@ -6,14 +6,14 @@
 #include "image.h"
 
 typedef struct {
-	char *name;
-	char buffer[255];
-	bool show;
+    char *name;
+    char buffer[255];
+    bool show;
 } input_buffer;
 
 typedef struct {
-	int col;
-	int row;
+    int col;
+    int row;
 } cursor;
 
 // Clears and sets up terminal attributes. Also saves previous term attributes
@@ -32,7 +32,7 @@ cursor get_cur(void);
 #define get_col() get_cur().col
 
 void cleanup(image *images[], int image_count, struct termios *term,
-			 buffer *buffer);
+             buffer *buffer);
 
 void key_loop(input_buffer *input_buffers, size_t input_count);
 
@@ -48,13 +48,13 @@ void toggle_echo(bool enabled);
 #define clear_line() printf("\x1b[K")
 #define move(row, col) move_cur(cur, row, col)
 #define echo()             \
-	{                      \
-		toggle_echo(true); \
-	}
+    {                      \
+        toggle_echo(true); \
+    }
 #define no_echo()           \
-	{                       \
-		toggle_echo(false); \
-	}
+    {                       \
+        toggle_echo(false); \
+    }
 
 extern cursor *cur;
 extern struct termios current_term;

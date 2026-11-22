@@ -5,6 +5,11 @@
 
 extern char opt_small_pic[255];
 extern char opt_big_pic[255];
+extern int  opt_small_max_h;
+extern int  opt_small_max_w;
+extern int  opt_big_max_h;
+extern int  opt_big_max_w;
+
 extern bool opt_hostname;
 extern bool opt_kernel;
 extern char opt_top_text[255];

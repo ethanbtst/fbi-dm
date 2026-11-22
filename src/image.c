@@ -11,143 +11,142 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-
 bool load_image(image *image, const char *filename)
 {
-	if (image == NULL || filename == NULL)
-		return false;
+    if (image == NULL || filename == NULL)
+        return false;
 
-	image->w = 0;
-	image->h = 0;
-	image->data = NULL;
+    image->w = 0;
+    image->h = 0;
+    image->data = NULL;
 
-	int width;
-	int height;
-	unsigned char *stbi_data =
-		stbi_load(filename, &width, &height, NULL, STBI_rgb);
-	if (stbi_data == NULL) {
-		fprintf(stderr, "Failed to load image '%s': %s\n", filename,
-				stbi_failure_reason());
-		return false;
-	}
+    int width;
+    int height;
+    unsigned char *stbi_data =
+        stbi_load(filename, &width, &height, NULL, STBI_rgb);
+    if (stbi_data == NULL) {
+        fprintf(stderr, "Failed to load image '%s': %s\n", filename,
+                stbi_failure_reason());
+        return false;
+    }
 
-	if (width <= 0 || height <= 0 ||
-		(size_t)width > SIZE_MAX / (size_t)height ||
-		(size_t)width * (size_t)height > SIZE_MAX / sizeof(pixel)) {
-		fprintf(stderr, "Invalid image dimensions for '%s'\n", filename);
-		stbi_image_free(stbi_data);
-		return false;
-	}
+    if (width <= 0 || height <= 0 ||
+        (size_t)width > SIZE_MAX / (size_t)height ||
+        (size_t)width * (size_t)height > SIZE_MAX / sizeof(pixel)) {
+        fprintf(stderr, "Invalid image dimensions for '%s'\n", filename);
+        stbi_image_free(stbi_data);
+        return false;
+    }
 
-	size_t pixel_count = (size_t)width * (size_t)height;
-	pixel *data = malloc(pixel_count * sizeof(pixel));
-	if (data == NULL) {
-		fprintf(stderr, "Failed to allocate image data for '%s'\n", filename);
-		stbi_image_free(stbi_data);
-		return false;
-	}
+    size_t pixel_count = (size_t)width * (size_t)height;
+    pixel *data = malloc(pixel_count * sizeof(pixel));
+    if (data == NULL) {
+        fprintf(stderr, "Failed to allocate image data for '%s'\n", filename);
+        stbi_image_free(stbi_data);
+        return false;
+    }
 
-	for (size_t i = 0; i < pixel_count; i++) {
-		data[i].r = stbi_data[i * STBI_rgb];
-		data[i].g = stbi_data[i * STBI_rgb + 1];
-		data[i].b = stbi_data[i * STBI_rgb + 2];
-	}
+    for (size_t i = 0; i < pixel_count; i++) {
+        data[i].r = stbi_data[i * STBI_rgb];
+        data[i].g = stbi_data[i * STBI_rgb + 1];
+        data[i].b = stbi_data[i * STBI_rgb + 2];
+    }
 
-	stbi_image_free(stbi_data);
-	image->w = width;
-	image->h = height;
-	image->data = data;
-	return true;
+    stbi_image_free(stbi_data);
+    image->w = width;
+    image->h = height;
+    image->data = data;
+    return true;
 }
 
 bool create_buffer(buffer *fb, const char *device)
 {
-	if (fb == NULL || device == NULL)
-		return false;
+    if (fb == NULL || device == NULL)
+        return false;
 
-	*fb = (buffer){ .fd = -1 };
-	fb->fd = open(device, O_RDWR);
-	if (fb->fd == -1) {
-		perror("Failed to open framebuffer device");
-		return false;
-	}
+    *fb = (buffer){ .fd = -1 };
+    fb->fd = open(device, O_RDWR);
+    if (fb->fd == -1) {
+        perror("Failed to open framebuffer device");
+        return false;
+    }
 
-	struct fb_var_screeninfo vinfo;
-	if (ioctl(fb->fd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
-		perror("Failed to get variable screen info");
-		close(fb->fd);
-		fb->fd = -1;
-		return false;
-	}
+    struct fb_var_screeninfo vinfo;
+    if (ioctl(fb->fd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
+        perror("Failed to get variable screen info");
+        close(fb->fd);
+        fb->fd = -1;
+        return false;
+    }
 
-	struct fb_fix_screeninfo finfo;
-	if (ioctl(fb->fd, FBIOGET_FSCREENINFO, &finfo) == -1) {
-		perror("Failed to get fixed screen info");
-		close(fb->fd);
-		fb->fd = -1;
-		return false;
-	}
+    struct fb_fix_screeninfo finfo;
+    if (ioctl(fb->fd, FBIOGET_FSCREENINFO, &finfo) == -1) {
+        perror("Failed to get fixed screen info");
+        close(fb->fd);
+        fb->fd = -1;
+        return false;
+    }
 
-	fb->w = (int)vinfo.xres;
-	fb->h = (int)vinfo.yres;
-	fb->bpp = (int)vinfo.bits_per_pixel;
-	fb->line_length = (int)finfo.line_length;
-	fb->screensize = fb->line_length * fb->h;
-	fb->fbp = mmap(NULL, fb->screensize, PROT_READ | PROT_WRITE, MAP_SHARED,
-				   fb->fd, 0);
+    fb->w = (int)vinfo.xres;
+    fb->h = (int)vinfo.yres;
+    fb->bpp = (int)vinfo.bits_per_pixel;
+    fb->line_length = (int)finfo.line_length;
+    fb->screensize = fb->line_length * fb->h;
+    fb->fbp = mmap(NULL, fb->screensize, PROT_READ | PROT_WRITE, MAP_SHARED,
+                   fb->fd, 0);
 
-	if (fb->fbp == MAP_FAILED) {
-		perror("Failed to mmap framebuffer device");
-		fb->fbp = NULL;
-		close(fb->fd);
-		fb->fd = -1;
-		return false;
-	}
+    if (fb->fbp == MAP_FAILED) {
+        perror("Failed to mmap framebuffer device");
+        fb->fbp = NULL;
+        close(fb->fd);
+        fb->fd = -1;
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 void destroy_buffer(buffer *fb)
 {
-	if (fb == NULL)
-		return;
-	if (fb->fbp != NULL)
-		munmap(fb->fbp, fb->screensize);
-	if (fb->fd != -1)
-		close(fb->fd);
+    if (fb == NULL)
+        return;
+    if (fb->fbp != NULL)
+        munmap(fb->fbp, fb->screensize);
+    if (fb->fd != -1)
+        close(fb->fd);
 
-	*fb = (buffer){ .fd = -1 };
-	fb->fd = -1;
+    *fb = (buffer){ .fd = -1 };
+    fb->fd = -1;
 }
 
 void draw_image(buffer *fb, const image *img, int x_offset, int y_offset)
 {
-	if (fb == NULL || img == NULL || fb->fbp == NULL || img->data == NULL ||
-		fb->bpp < 24)
-		return;
+    if (fb == NULL || img == NULL || fb->fbp == NULL || img->data == NULL ||
+        fb->bpp < 24)
+        return;
 
-	int bytes_per_pixel = fb->bpp / 8;
-	for (int sy = 0; sy < img->h; sy++) {
-		int dy = sy + y_offset;
-		if (dy < 0 || dy >= fb->h)
-			continue;
+    int bytes_per_pixel = fb->bpp / 8;
+    for (int sy = 0; sy < img->h; sy++) {
+        int dy = sy + y_offset;
+        if (dy < 0 || dy >= fb->h)
+            continue;
 
-		for (int sx = 0; sx < img->w; sx++) {
-			int dx = sx + x_offset;
-			if (dx < 0 || dx >= fb->w)
-				continue;
+        for (int sx = 0; sx < img->w; sx++) {
+            int dx = sx + x_offset;
+            if (dx < 0 || dx >= fb->w)
+                continue;
 
-			size_t location =
-				(size_t)dy * fb->line_length + (size_t)dx * bytes_per_pixel;
+            size_t location =
+                (size_t)dy * fb->line_length + (size_t)dx * bytes_per_pixel;
 
-			pixel pixel = img->data[sy * img->w + sx];
+            pixel pixel = img->data[sy * img->w + sx];
 
-			fb->fbp[location] = (char)pixel.b;
-			fb->fbp[location + 1] = (char)pixel.g;
-			fb->fbp[location + 2] = (char)pixel.r;
+            fb->fbp[location] = (char)pixel.b;
+            fb->fbp[location + 1] = (char)pixel.g;
+            fb->fbp[location + 2] = (char)pixel.r;
 
-			if (bytes_per_pixel == 4)
-				fb->fbp[location + 3] = (char)255;
-		}
-	}
+            if (bytes_per_pixel == 4)
+                fb->fbp[location + 3] = (char)255;
+        }
+    }
 }

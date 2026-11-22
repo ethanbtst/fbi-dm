@@ -5,32 +5,32 @@
 
 char *trim(char *text)
 {
-	while (isspace((unsigned char)*text))
-		text++;
+    while (isspace((unsigned char)*text))
+        text++;
 
-	char *end = text + strlen(text);
-	while (end > text && isspace((unsigned char)end[-1]))
-		*--end = '\0';
+    char *end = text + strlen(text);
+    while (end > text && isspace((unsigned char)end[-1]))
+        *--end = '\0';
 
-	return text;
+    return text;
 }
 
 bool parse_line(char *line, char **option, char **value)
 {
-	char *separator = strchr(line, '=');
+    char *separator = strchr(line, '=');
 
-	if (separator == NULL)
-		return false;
+    if (separator == NULL)
+        return false;
 
-	*separator = '\0';
-	*option = trim(line);
-	*value = trim(separator + 1);
+    *separator = '\0';
+    *option = trim(line);
+    *value = trim(separator + 1);
 
-	if (**option == '\0' || **option == '#')
-		return false;
+    if (**option == '\0' || **option == '#')
+        return false;
 
-	if ((*value)[0] == '\0')
-		return false;
+    if ((*value)[0] == '\0')
+        return false;
 
-	return true;
+    return true;
 }

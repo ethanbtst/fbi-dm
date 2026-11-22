@@ -5,16 +5,16 @@
 #include "term.h"
 
 enum {
-	CUR_TOP_TEXT,
-	CUR_HOSTNAME,
-	CUR_KERNEL,
-	CUR_DATE,
-	CUR_TIME,
-	CUR_BATTERY,
-	CUR_SESSION,
+    CUR_TOP_TEXT,
+    CUR_HOSTNAME,
+    CUR_KERNEL,
+    CUR_DATE,
+    CUR_TIME,
+    CUR_BATTERY,
+    CUR_SESSION,
     CUR_CONTROLS,
     CUR_INPUT,
-	CUR_NUM_MAX
+    CUR_NUM_MAX
 };
 
 extern cursor info_curs[CUR_NUM_MAX];

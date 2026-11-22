@@ -1,5 +1,6 @@
 <div align="center">
-	<h1>
+	<img src="assets/fbi.png" style="margin: 0">
+	<h1 style="margin: 0">
 		fbi-dm
 	</h1>
 </div>

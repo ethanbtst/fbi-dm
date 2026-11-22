@@ -5,9 +5,9 @@
 #include <pwd.h>
 
 typedef struct {
-	char *name;
-	char *exec;
-	char *type;
+    char *name;
+    char *exec;
+    char *type;
 } session;
 
 extern int session_cur;
