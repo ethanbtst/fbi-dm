@@ -173,6 +173,30 @@ void free_sessions(session *session_list, size_t count)
     free(session_list);
 }
 
+bool setup_session_environment(const session *selected)
+{
+    if (selected == NULL || selected->type == NULL)
+        return false;
+
+    if (strcasecmp(selected->type, "x11") != 0 &&
+        strcasecmp(selected->type, "wayland") != 0)
+        return true;
+
+    if (setenv("XDG_SESSION_CLASS", "user", 1) != 0)
+        return false;
+    const char *session_type =
+        strcasecmp(selected->type, "x11") == 0 ? "x11" : "wayland";
+    if (setenv("XDG_SESSION_TYPE", session_type, 1) != 0)
+        return false;
+    if (selected->name != NULL &&
+        (setenv("XDG_SESSION_DESKTOP", selected->name, 1) != 0 ||
+         setenv("XDG_CURRENT_DESKTOP", selected->name, 1) != 0 ||
+         setenv("DESKTOP_SESSION", selected->name, 1) != 0))
+        return false;
+
+    return true;
+}
+
 void start_session(struct passwd *pw, const session *selected)
 {
     if (pw == NULL || selected == NULL || selected->type == NULL)
@@ -191,14 +215,10 @@ void start_session(struct passwd *pw, const session *selected)
     }
 
     const char *session_type = selected->type;
-    if (strcasecmp(session_type, "x11") == 0)
-        setenv("XDG_SESSION_TYPE", "x11", 1);
-    else if (strcasecmp(session_type, "wayland") == 0)
-        setenv("XDG_SESSION_TYPE", "wayland", 1);
-
-    setenv("XDG_SESSION_DESKTOP", selected->name, 1);
-    setenv("XDG_CURRENT_DESKTOP", selected->name, 1);
-    setenv("DESKTOP_SESSION", selected->name, 1);
+    if (!setup_session_environment(selected)) {
+        fprintf(stderr, "Failed to set session environment\n");
+        exit(EXIT_FAILURE);
+    }
 
     if (selected->exec == NULL || selected->exec[0] == '\0') {
         fprintf(stderr, "Selected session has no Exec entry\n");

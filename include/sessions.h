@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <pwd.h>
+#include <stdbool.h>
 
 typedef struct {
     char *name;
@@ -18,6 +19,7 @@ session *get_sessions(size_t *session_count);
 session copy_session(const session *source);
 void free_session(session *session_info);
 void free_sessions(session *session_list, size_t count);
+bool setup_session_environment(const session *selected);
 void start_session(struct passwd *pw, const session *selected);
 int get_session_index(int session_count);
 void set_session_index(int session_cur);

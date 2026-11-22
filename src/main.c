@@ -133,9 +133,6 @@ int main()
     display_running = 0;
     pthread_join(keyThread, NULL);
 
-    pthread_cancel(displayThread);
-    pthread_cancel(keyThread);
-
     // Auth
     pam_handle_t *pamh = NULL;
     if (check_user(in[0].buffer, in[1].buffer, &pamh)) {
@@ -148,10 +145,26 @@ int main()
             return 1;
         }
 
+        session selected_session = { 0 };
+        if (sessions != NULL && session_cur >= 0 &&
+            session_cur <= (int)session_count)
+            selected_session = copy_session(&sessions[session_cur]);
+
+        if (selected_session.type == NULL ||
+            !setup_session_environment(&selected_session)) {
+            perror("session environment setup failed");
+            free_session(&selected_session);
+            pam_setcred(pamh, PAM_DELETE_CRED);
+            pam_end(pamh, PAM_SYSTEM_ERR);
+            cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            return 1;
+        }
+
         if (pam_open_session(pamh, 0) != PAM_SUCCESS) {
             perror("pam_open_session failed");
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SESSION_ERR);
+            free_session(&selected_session);
             cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
             return 1;
         }
@@ -164,6 +177,7 @@ int main()
             pam_close_session(pamh, PAM_SILENT);
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
+            free_session(&selected_session);
             cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
             return 1;
         }
@@ -173,14 +187,11 @@ int main()
             pam_close_session(pamh, PAM_SILENT);
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
+            free_session(&selected_session);
             cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
             return 1;
         }
 
-        session selected_session = (session){ 0 };
-        if (sessions != NULL && session_cur >= 0 &&
-            session_cur <= (int)session_count)
-            selected_session = copy_session(&sessions[session_cur]);
         cleanup((image *[]){ &small_img, &large_img }, 2, &saved_term, buf);
         start_session(pw, &selected_session);
         free_session(&selected_session);
