@@ -20,6 +20,9 @@
 
 pthread_t keyThread, displayThread;
 static volatile sig_atomic_t display_running;
+buffer *buf;
+image small_img = { 0 };
+image large_img = { 0 };
 
 static void delay_frame(const struct timespec *start,
                         const struct timespec *stop);
@@ -71,20 +74,22 @@ int main()
     if (strcmp(opt_big_pic, "distro") == 0)
         set_distro_logo();
 
-    buffer *buf = &(buffer){ .fbp = NULL };
+    buf = &(buffer){ .fbp = NULL };
     if (!create_buffer(buf, "/dev/fb0")) {
         tcsetattr(STDIN_FILENO, TCSANOW, &saved_term);
         return 1;
     }
 
     // Image stuff
-    image small_img = { 0 };
-    image large_img = { 0 };
-
     if (!load_image(&small_img, opt_small_pic))
-        load_image(&small_img, "/opt/fb-dm/img/logo_linux_clut224.ppm");
+        load_image(&small_img, "/opt/fbi-dm/img/linux_logo.png");
     if (!load_image(&large_img, opt_big_pic))
-        load_image(&large_img, "/opt/fb-dm/img/test.png");
+        load_image(&large_img, "/opt/fbi-dm/img/fbi.png");
+
+    if (!resize_image(&small_img, opt_small_max_w, opt_small_max_h))
+        fprintf(stderr, "Failed to fit small image within configured limits\n");
+    if (!resize_image(&large_img, opt_big_max_w, opt_big_max_h))
+        fprintf(stderr, "Failed to fit big image within configured limits\n");
 
     for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
         draw_image(buf, &small_img, i * small_img.w, 0);

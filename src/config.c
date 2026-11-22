@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <stdlib.h>
 
 #include "config.h"
 #include "parser.h"
 
 char opt_small_pic[255];
 char opt_big_pic[255];
-int  opt_small_max_h;
-int  opt_small_max_w;
-int  opt_big_max_h;
-int  opt_big_max_w;
+int opt_small_max_h;
+int opt_small_max_w;
+int opt_big_max_h;
+int opt_big_max_w;
 
 bool opt_hostname;
 bool opt_kernel;
@@ -22,12 +23,12 @@ bool opt_brightness;
 
 void default_config()
 {
-    strcpy(opt_small_pic, "/opt/fbi-dm/img/logo_linux_clut224.ppm");
+    strcpy(opt_small_pic, "/opt/fbi-dm/img/linux_logo.png");
     strcpy(opt_big_pic, "distro");
-    opt_small_max_h = 80; 
+    opt_small_max_h = 80;
     opt_small_max_w = 80;
-    opt_big_max_h = 300;
-    opt_big_max_w = 300;
+    opt_big_max_h = 260;
+    opt_big_max_w = 260;
 
     strcpy(opt_top_text, "Welcome!");
     opt_hostname = true;
@@ -54,7 +55,7 @@ void set_distro_logo()
 
         if (strcasecmp(option, "id") == 0)
             snprintf(opt_big_pic, sizeof(opt_big_pic),
-                     "/opt/fbi-dm/img/distro_logos/%s.ppm", value);
+                     "/opt/fbi-dm/img/distro_logos/%s.png", value);
     }
     fclose(fd);
 }
@@ -79,6 +80,18 @@ void get_config()
 
         if (strcmp(option, "big_pic") == 0)
             strcpy(opt_big_pic, value);
+
+        if (strcmp(option, "small_max_h") == 0)
+            opt_small_max_h = atoi(value);
+
+        if (strcmp(option, "small_max_w") == 0)
+            opt_small_max_w = atoi(value);
+
+        if (strcmp(option, "big_max_h") == 0)
+            opt_big_max_h = atoi(value);
+
+        if (strcmp(option, "big_max_w") == 0)
+            opt_big_max_w = atoi(value);
 
         if (strcmp(option, "top_text") == 0)
             strcpy(opt_top_text, value);

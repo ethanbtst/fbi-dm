@@ -22,30 +22,36 @@ minimal dependencies so I can learn play around with it.
 ## Installation
 To install simply clone, make and make install:
 ```
-git clone https://git.ethanbtst.ca/fb-dm && cd fb-dm
+git clone https://git.ethanbtst.ca/fbi-dm && cd fbi-dm
 make
 sudo make install
 ```
 
-After, disable any display manager on tty and enable `fb-dm@tty1.service`
+After, disable any display manager on tty and enable `fbi-dm@tty1.service`
 
 ## Customization
-To customize edit `/opt/fb-dm/config.ini`
+To customize edit `/opt/fbi-dm/config.ini`
 
 By default the images shown are the penguins found when booting the
 system (if enabled when building the kernel). The big image will be
-your distro (only Arch right now).
+your distro's logo if its there.
 
 Default config: 
 ```
-small_pic = path to image
-big_pic   = distro or path to image
+small_pic 		= path to image
+big_pic   		= distro or path to image
+opt_small_max_h = int for max pixels
+opt_small_max_w = int for max pixels
+opt_big_max_h 	= int for max pixels
+opt_big_max_w 	= int for max pixels
 
-top_text  = string
-hostname  = bool
-kernel    = bool
-date      = strftime format
-time      = strftime format
+top_text  		= string
+hostname  		= bool
+kernel    		= bool
+date      		= strftime format
+time      		= strftime format
+battery			= bool
+brightness		= bool
 ```
 
 
@@ -57,6 +63,5 @@ time      = strftime format
 ![Custom](./assets/custom.png)
 
 ## Todo
-- Add jpeg/png support and scaling of images (Images need to be scaled already)
 - Try using DRM for KMSCON support?
-- Something else I want
+- Anything else I find cool (gifs/animations)

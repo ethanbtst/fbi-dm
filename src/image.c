@@ -11,6 +11,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize2.h"
+
 bool load_image(image *image, const char *filename)
 {
     if (image == NULL || filename == NULL)
@@ -56,6 +59,59 @@ bool load_image(image *image, const char *filename)
     image->w = width;
     image->h = height;
     image->data = data;
+    return true;
+}
+
+bool resize_image(image *img, int max_width, int max_height)
+{
+    if (img == NULL || img->data == NULL || img->w <= 0 || img->h <= 0 ||
+        max_width <= 0 || max_height <= 0)
+        return false;
+
+    if (img->w <= max_width && img->h <= max_height)
+        return true;
+
+    int new_width;
+    int new_height;
+    if ((long long)max_width * img->h < (long long)max_height * img->w) {
+        new_width = max_width;
+        new_height =
+            (int)(((long long)img->h * max_width + img->w / 2) / img->w);
+    } else {
+        new_height = max_height;
+        new_width =
+            (int)(((long long)img->w * max_height + img->h / 2) / img->h);
+    }
+
+    if (new_width < 1)
+        new_width = 1;
+    if (new_height < 1)
+        new_height = 1;
+    if ((size_t)new_width > SIZE_MAX / (size_t)new_height ||
+        (size_t)new_width * (size_t)new_height > SIZE_MAX / sizeof(pixel))
+        return false;
+
+    size_t pixel_count = (size_t)new_width * (size_t)new_height;
+    pixel *new_data = malloc(pixel_count * sizeof(pixel));
+    if (new_data == NULL) {
+        fprintf(stderr, "Failed to allocate resized image data\n");
+        return false;
+    }
+
+    unsigned char *resized = stbir_resize_uint8_srgb(
+        (const unsigned char *)img->data, img->w, img->h,
+        (stbir_int64)img->w * STBI_rgb, (unsigned char *)new_data, new_width,
+        new_height, (stbir_int64)new_width * STBI_rgb, STBIR_RGB);
+    if (resized == NULL) {
+        fprintf(stderr, "Failed to resize image\n");
+        free(new_data);
+        return false;
+    }
+
+    free(img->data);
+    img->w = new_width;
+    img->h = new_height;
+    img->data = new_data;
     return true;
 }
 
