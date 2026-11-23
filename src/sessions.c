@@ -239,7 +239,7 @@ void start_session(struct passwd *pw, const session *selected)
 
 int get_session_index(int session_count)
 {
-    FILE *fd = fopen("/opt/fb-dm/index.txt", "r");
+    FILE *fd = fopen("/opt/fbi-dm/index.txt", "r");
     if (!fd)
         return -1;
 

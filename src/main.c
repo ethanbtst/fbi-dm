@@ -107,7 +107,7 @@ int main()
         session_cur = (int)session_count;
 
     set_cursors_info((small_img.h / font_height) + 2, right,
-                     ((small_img.h + large_img.h) / font_height) + 1);
+                     ((small_img.h + large_img.h) / font_height) + 2);
 
     // Text input
     input_buffer in[2];
