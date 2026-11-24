@@ -21,19 +21,14 @@
 
 pthread_t keyThread, displayThread;
 static volatile sig_atomic_t display_running;
-buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
 vertex pane_vertices[8] = {
-    { 1.0f, -1.0f, 0.0f },
-    { -1.0f, -1.0f, 0.0f },
-    { -1.0f, 1.0f, 0.0f },
-    { 1.0f, 1.0f, 0.0f },
-    { 1.0f, -1.0f, 0.000001f },
-    { -1.0f, -1.0f, 0.000001f },
-    { -1.0f, 1.0f, 0.000001f },
-    { 1.0f, 1.0f, 0.000001f },
+    { 1.0f, -1.0f, 0.0f },      { -1.0f, -1.0f, 0.0f },
+    { -1.0f, 1.0f, 0.0f },      { 1.0f, 1.0f, 0.0f },
+    { 1.0f, -1.0f, 0.000001f }, { -1.0f, -1.0f, 0.000001f },
+    { -1.0f, 1.0f, 0.000001f }, { 1.0f, 1.0f, 0.000001f },
 };
 
 triangle pane_triangles[] = {
@@ -92,7 +87,7 @@ static void *display_loop(void *input_buffers)
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
         clear();
-		rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+        rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
         render_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
@@ -140,13 +135,10 @@ int main()
     if (strcmp(opt_big_pic, "distro") == 0)
         set_distro_logo();
 
-    buf = &(buffer){ .fbp = NULL };
     if (!create_buffer(&canvas, "/dev/fb0")) {
-        buf = &canvas;
         tcsetattr(STDIN_FILENO, TCSANOW, &saved_term);
         return 1;
     }
-    buf = &canvas;
 
     // Image stuff
     if (!load_texture(&small_img, opt_small_pic))
@@ -158,7 +150,8 @@ int main()
                             (float)large_img.width, (float)large_img.height,
                             5.0f)) {
         fprintf(stderr, "Failed to fit 3D object into image area\n");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
         return 1;
     }
 
@@ -167,8 +160,8 @@ int main()
     // Text positioning
     struct winsize w;
     ioctl(STDERR_FILENO, TIOCGWINSZ, &w);
-    int font_height = buf->h / w.ws_row;
-    int font_width = buf->w / w.ws_col;
+    int font_height = canvas.h / w.ws_row;
+    int font_width = canvas.w / w.ws_col;
     int right = large_img.width / font_width + 2;
 
     sessions = get_sessions(&session_count);
@@ -187,14 +180,16 @@ int main()
     display_running = 1;
     if (pthread_create(&displayThread, NULL, display_loop, &in) != 0) {
         perror("Failed to create display thread");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
         return 1;
     }
     if (pthread_create(&keyThread, NULL, keyboard_loop, &in) != 0) {
         perror("Failed to create keyboard thread");
         display_running = 0;
         pthread_join(displayThread, NULL);
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
         return 1;
     }
 
@@ -210,7 +205,7 @@ int main()
         if (!pw) {
             perror("getpwnam");
             cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                    buf);
+                    &canvas);
             pam_end(pamh, PAM_SYSTEM_ERR);
             return 1;
         }
@@ -227,7 +222,7 @@ int main()
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
             cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                    buf);
+                    &canvas);
             return 1;
         }
 
@@ -237,7 +232,7 @@ int main()
             pam_end(pamh, PAM_SESSION_ERR);
             free_session(&selected_session);
             cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                    buf);
+                    &canvas);
             return 1;
         }
 
@@ -251,7 +246,7 @@ int main()
             pam_end(pamh, PAM_SYSTEM_ERR);
             free_session(&selected_session);
             cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                    buf);
+                    &canvas);
             return 1;
         }
 
@@ -262,11 +257,12 @@ int main()
             pam_end(pamh, PAM_SYSTEM_ERR);
             free_session(&selected_session);
             cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                    buf);
+                    &canvas);
             return 1;
         }
 
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
         start_session(pw, &selected_session);
         free_session(&selected_session);
 
@@ -275,7 +271,8 @@ int main()
         pam_end(pamh, PAM_SUCCESS);
     } else {
         printf("Login Failed\n");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
     }
     return 0;
 }
