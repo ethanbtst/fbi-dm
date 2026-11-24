@@ -13,9 +13,9 @@
 #include "pam.h"
 #include "config.h"
 #include "sessions.h"
-#define CANVAS_IMPLEMENTATION
-#include "canvas.h"
 #include "info.h"
+#define CANVAS_IMPLEMENTATION
+#include "fb_canvas.h"
 
 #define FPS 24
 
@@ -25,14 +25,75 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
+vertex cube_vertices[] = { { 1, 1, 3 },           { -1, 1, 3 },
+                           { -1, -1, 3 },         { 1, -1, 3 },
+                           { 1, 1, 3.0000001 },   { -1, 1, 3.0000001 },
+                           { -1, -1, 3.0000001 }, { 1, -1, 3.0000001 } };
+
+triangle cube_triangles[] = {
+    { .v = { 0, 1, 2 },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 0, 2, 3 },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 0, 3 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 4, 3, 7 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 5, 4, 7 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 5, 7, 6 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 1, 5, 6 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 1, 6, 2 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 5, 1 },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 4, 1, 0 },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 2, 6, 7 },
+      .uv = { { 0, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 2, 7, 3 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 1, 0 } },
+      .color = { 0, 0, 255 } },
+};
+
+object cube = {
+    .vertices = cube_vertices,
+    .vertex_count = ARRAY_LEN(cube_vertices),
+    .triangles = cube_triangles,
+    .triangle_count = ARRAY_LEN(cube_triangles),
+};
+
 static void delay_frame(const struct timespec *start,
                         const struct timespec *stop);
 
 static void *display_loop(void *input_buffers)
 {
+    cube.texture = &large_img;
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
+        clear();
+        for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
+            draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
+                                    small_img.height, &small_img);
+        draw2drectangle_texture(0, small_img.height, large_img.width,
+                                large_img.height, &large_img);
+        rotate_object(&cube, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+        render_object(&cube);
+        present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
         delay_frame(&start, &stop);
@@ -94,13 +155,6 @@ int main()
     if (!resize_texture(&large_img, opt_big_max_w, opt_big_max_h))
         fprintf(stderr, "Failed to fit big image within configured limits\n");
 
-    for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
-        draw2drectangle_texture(4 + i * small_img.width, 0,
-                                small_img.width, small_img.height,
-                                &small_img);
-    draw2drectangle_texture(0, small_img.height,
-                            large_img.width, large_img.height,
-                            &large_img);
     present();
 
     // Text positioning
@@ -148,7 +202,8 @@ int main()
 
         if (!pw) {
             perror("getpwnam");
-            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                    buf);
             pam_end(pamh, PAM_SYSTEM_ERR);
             return 1;
         }
@@ -164,7 +219,8 @@ int main()
             free_session(&selected_session);
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
-            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                    buf);
             return 1;
         }
 
@@ -173,7 +229,8 @@ int main()
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SESSION_ERR);
             free_session(&selected_session);
-            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                    buf);
             return 1;
         }
 
@@ -186,7 +243,8 @@ int main()
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
             free_session(&selected_session);
-            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                    buf);
             return 1;
         }
 
@@ -196,7 +254,8 @@ int main()
             pam_setcred(pamh, PAM_DELETE_CRED);
             pam_end(pamh, PAM_SYSTEM_ERR);
             free_session(&selected_session);
-            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+            cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                    buf);
             return 1;
         }
 

@@ -3,7 +3,7 @@
 #include <termios.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "canvas.h"
+#include "fb_canvas.h"
 
 typedef struct {
     char *name;
