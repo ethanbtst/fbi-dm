@@ -1,7 +1,7 @@
 #include "term_utils.h"
 #include "pam.h"
 #include "sessions.h"
-#include "image.h"
+#include "canvas.h"
 #include "info.h"
 #include <string.h>
 #include <stdio.h>
@@ -41,8 +41,8 @@ int main(){
 	if (!create_buffer(buf, "/dev/fb0"))
 		return 1;
 
-	image test = { 0 };
-	if (!load_image(&test, "img/distro_logos/proxmox.ppm")) {
+	texture test = { 0 };
+	if (!load_texture(&test, "img/distro_logos/proxmox.ppm")) {
 		destroy_buffer(buf);
 		return 1;
 	}
@@ -55,10 +55,8 @@ int main(){
     while (1){
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        image* rotated = rotate_image(&test, angle += dangle);
-        draw_image(buf, rotated, 200, 200);
-        free(rotated->data);
-        free(rotated);
+        draw2drectangle_texture(200, 200, test.width, test.height, &test);
+        present();
 
         clock_gettime(CLOCK_MONOTONIC, &stop);
 

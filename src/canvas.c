@@ -10,64 +10,17 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include "canvas.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize2.h"
 // Following
 // https://www.gabrielgambetta.com/computer-graphics-from-scratch
 
 #define FPS 60
 #define ARRAY_LEN(arr) sizeof(arr) / sizeof(arr[0])
 #define frac(x) x - floor(x)
-typedef struct {
-	int x;
-	int y;
-} point;
-
-typedef struct {
-	float x;
-	float y;
-	float z;
-} vertex;
-
-typedef struct {
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-} colour;
-
-typedef struct {
-	int width;
-	int height;
-	unsigned char *pixels;
-} texture;
-
-typedef struct {
-	int v[3];
-	float uv[3][2];
-	colour color;
-} triangle;
-
-typedef struct {
-	vertex *vertices;
-	size_t vertex_count;
-	triangle *triangles;
-	size_t triangle_count;
-	point *projected;
-	texture *texture;
-} object;
-
-typedef struct {
-	char *fbp;
-	char *back_buffer;
-	float *depth_buffer;
-	int fd;
-	int w;
-	int h;
-	int line_length;
-	int bpp;
-	int screensize;
-} buffer;
-
 buffer canvas;
 const float viewport_h = 2.0f;
 const float projection_distance = 1.0f;
@@ -110,21 +63,59 @@ void destroy_texture(texture *tex)
 	*tex = (texture){ 0 };
 }
 
-static void delay_frame(const struct timespec *start,
-						const struct timespec *stop)
+bool resize_texture(texture *tex, int max_width, int max_height)
 {
-	const long frame_ns = 1000000000L / FPS;
-	long elapsed_ns = (stop->tv_sec - start->tv_sec) * 1000000000L +
-					  stop->tv_nsec - start->tv_nsec;
-	long remaining_ns = frame_ns - elapsed_ns;
+	if (tex == NULL || tex->pixels == NULL || tex->width <= 0 ||
+		tex->height <= 0 || max_width <= 0 || max_height <= 0)
+		return false;
 
-	if (remaining_ns > 0) {
-		struct timespec delay = {
-			.tv_sec = remaining_ns / 1000000000L,
-			.tv_nsec = remaining_ns % 1000000000L,
-		};
-		nanosleep(&delay, NULL);
+	if (tex->width <= max_width && tex->height <= max_height)
+		return true;
+
+	int new_width;
+	int new_height;
+	if ((long long)max_width * tex->height <
+		(long long)max_height * tex->width) {
+		new_width = max_width;
+		new_height =
+			(int)(((long long)tex->height * max_width + tex->width / 2) /
+				  tex->width);
+	} else {
+		new_height = max_height;
+		new_width =
+			(int)(((long long)tex->width * max_height + tex->height / 2) /
+				  tex->height);
 	}
+
+	if (new_width < 1)
+		new_width = 1;
+	if (new_height < 1)
+		new_height = 1;
+	if ((size_t)new_width > SIZE_MAX / (size_t)new_height ||
+		(size_t)new_width * (size_t)new_height >
+			SIZE_MAX / (STBI_rgb * sizeof(*tex->pixels)))
+		return false;
+
+	size_t pixel_count = (size_t)new_width * (size_t)new_height;
+	unsigned char *resized_pixels =
+		malloc(pixel_count * STBI_rgb * sizeof(*resized_pixels));
+	if (resized_pixels == NULL)
+		return false;
+
+	unsigned char *resized = stbir_resize_uint8_srgb(
+		tex->pixels, tex->width, tex->height,
+		(stbir_int64)tex->width * STBI_rgb, resized_pixels, new_width,
+		new_height, (stbir_int64)new_width * STBI_rgb, STBIR_RGB);
+	if (resized == NULL) {
+		free(resized_pixels);
+		return false;
+	}
+
+	stbi_image_free(tex->pixels);
+	tex->width = new_width;
+	tex->height = new_height;
+	tex->pixels = resized_pixels;
+	return true;
 }
 
 bool create_buffer(buffer *fb, const char *device)
@@ -203,6 +194,8 @@ bool create_buffer(buffer *fb, const char *device)
 	for (size_t i = 0; i < pixel_count; ++i)
 		fb->depth_buffer[i] = INFINITY;
 	memset(fb->back_buffer, 0, (size_t)fb->screensize);
+	if (fb != &canvas)
+		canvas = *fb;
 
 	return true;
 }

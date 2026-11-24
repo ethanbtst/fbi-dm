@@ -3,7 +3,7 @@
 #include <termios.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "image.h"
+#include "canvas.h"
 
 typedef struct {
     char *name;
@@ -31,7 +31,7 @@ cursor get_cur(void);
 #define get_row() get_cur().row
 #define get_col() get_cur().col
 
-void cleanup(image *images[], int image_count, struct termios *term,
+void cleanup(texture *textures[], int texture_count, struct termios *term,
              buffer *buffer);
 
 void key_loop(input_buffer *input_buffers, size_t input_count);

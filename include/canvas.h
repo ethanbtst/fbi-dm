@@ -1,3 +1,6 @@
+#ifndef CANVAS_H
+#define CANVAS_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/fb.h>
@@ -10,12 +13,9 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 // Following
 // https://www.gabrielgambetta.com/computer-graphics-from-scratch
 
-#define FPS 60
 #define ARRAY_LEN(arr) sizeof(arr) / sizeof(arr[0])
 #define frac(x) x - floor(x)
 typedef struct {
@@ -77,8 +77,7 @@ bool load_texture(texture *tex, const char *filename);
 
 void destroy_texture(texture *tex);
 
-static void delay_frame(const struct timespec *start,
-						const struct timespec *stop);
+bool resize_texture(texture *tex, int max_width, int max_height);
 
 bool create_buffer(buffer *fb, const char *device);
 
@@ -87,8 +86,6 @@ void destroy_buffer(buffer *fb);
 void swap_points(point *p0, point *p1);
 
 void put_pixel(int x, int y, colour c);
-
-static void put_pixel_2d(int x, int y, colour c);
 
 void draw2drectangle(int posX, int posY, int width, int height);
 
@@ -108,23 +105,13 @@ point viewport_to_canvas(float x, float y);
 
 point project_vertex(vertex v);
 
-static float projected_signed_area(point a, point b, point c);
-
-static colour sample_texture(const texture *tex, float u, float v);
-
 void draw2drectangle_texture(int posX, int posY, int width, int height,
 							 const texture *tex);
-
-static void draw_textured_triangle(point a, point b, point c, vertex va,
-								   vertex vb, vertex vc, float uv[3][2],
-								   const texture *tex);
 
 void render_triangle(triangle tri, const point *projected,
 					 const vertex *vertices, const texture *tex);
 
 void render_object(object *obj);
-
-static vertex get_object_center(const object *obj);
 
 void xz_rotate_object(object *obj, float angle);
 
@@ -133,3 +120,5 @@ void xy_rotate_object(object *obj, float angle);
 void yz_rotate_object(object *obj, float angle);
 
 void rotate_object(object *obj, float x_angle, float y_angle, float z_angle);
+
+#endif

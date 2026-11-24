@@ -225,13 +225,12 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
     printf("\n");
 }
 
-void cleanup(image *images[], int image_count, struct termios *term,
+void cleanup(texture *textures[], int texture_count, struct termios *term,
              buffer *buffer)
 {
-    for (int i = 0; i < image_count; ++i) {
-        if (images[i] != NULL) {
-            free(images[i]->data);
-            images[i]->data = NULL;
+    for (int i = 0; i < texture_count; ++i) {
+        if (textures[i] != NULL) {
+            destroy_texture(textures[i]);
         }
     }
 
