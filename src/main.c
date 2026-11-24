@@ -13,6 +13,7 @@
 #include "pam.h"
 #include "config.h"
 #include "sessions.h"
+#define CANVAS_IMPLEMENTATION
 #include "canvas.h"
 #include "info.h"
 
