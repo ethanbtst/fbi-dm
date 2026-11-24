@@ -72,6 +72,7 @@ extern buffer canvas;
 extern const float viewport_h;
 extern const float projection_distance;
 extern float viewport_w;
+extern vertex camera_position;
 
 bool load_texture(texture *tex, const char *filename);
 
@@ -105,6 +106,8 @@ point viewport_to_canvas(float x, float y);
 
 point project_vertex(vertex v);
 
+void set_camera_position(float x, float y, float z);
+
 void draw2drectangle_texture(int posX, int posY, int width, int height,
                              const texture *tex);
 
@@ -135,6 +138,7 @@ buffer canvas;
 const float viewport_h = 2.0f;
 const float projection_distance = 1.0f;
 float viewport_w = 3.2f;
+vertex camera_position = { 0 };
 
 bool load_texture(texture *tex, const char *filename)
 {
@@ -532,12 +536,20 @@ point viewport_to_canvas(float x, float y)
 
 point project_vertex(vertex v)
 {
-    if (v.z <= 0.0f)
+    float camera_x = v.x - camera_position.x;
+    float camera_y = v.y - camera_position.y;
+    float camera_z = v.z - camera_position.z;
+    if (camera_z <= 0.0f)
         return (point){ .x = 0, .y = 0 };
 
-    float projected_x = v.x * projection_distance / v.z;
-    float projected_y = v.y * projection_distance / v.z;
+    float projected_x = camera_x * projection_distance / camera_z;
+    float projected_y = camera_y * projection_distance / camera_z;
     return viewport_to_canvas(projected_x, projected_y);
+}
+
+void set_camera_position(float x, float y, float z)
+{
+    camera_position = (vertex){ .x = x, .y = y, .z = z };
 }
 
 static float projected_signed_area(point a, point b, point c)
@@ -600,9 +612,12 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
                                    vertex vb, vertex vc, float uv[3][2],
                                    const texture *tex, colour flat_color)
 {
+    float za = va.z - camera_position.z;
+    float zb = vb.z - camera_position.z;
+    float zc = vc.z - camera_position.z;
     if (canvas.back_buffer == NULL || canvas.depth_buffer == NULL ||
-        canvas.w <= 0 || canvas.h <= 0 ||
-        va.z <= 0.0f || vb.z <= 0.0f || vc.z <= 0.0f)
+        canvas.w <= 0 || canvas.h <= 0 || za <= 0.0f || zb <= 0.0f ||
+        zc <= 0.0f)
         return;
     if (tex != NULL &&
         (tex->pixels == NULL || tex->width <= 0 || tex->height <= 0))
@@ -652,7 +667,7 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
             if (w0 < -1e-6f || w1 < -1e-6f || w2 < -1e-6f)
                 continue;
 
-            float inv_z = w0 / va.z + w1 / vb.z + w2 / vc.z;
+            float inv_z = w0 / za + w1 / zb + w2 / zc;
             if (inv_z <= 0.0f)
                 continue;
 
@@ -665,11 +680,11 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
 
             colour pixel_color = flat_color;
             if (tex != NULL) {
-                float u = (w0 * uv[0][0] / va.z + w1 * uv[1][0] / vb.z +
-                           w2 * uv[2][0] / vc.z) /
+                float u = (w0 * uv[0][0] / za + w1 * uv[1][0] / zb +
+                           w2 * uv[2][0] / zc) /
                           inv_z;
-                float v = (w0 * uv[0][1] / va.z + w1 * uv[1][1] / vb.z +
-                           w2 * uv[2][1] / vc.z) /
+                float v = (w0 * uv[0][1] / za + w1 * uv[1][1] / zb +
+                           w2 * uv[2][1] / zc) /
                           inv_z;
                 pixel_color = sample_texture(tex, u, v);
             }
@@ -715,9 +730,9 @@ void render_object(object *obj)
         point a = obj->projected[tri.v[0]];
         point b = obj->projected[tri.v[1]];
         point c = obj->projected[tri.v[2]];
-        if (obj->vertices[tri.v[0]].z <= 0.0f ||
-            obj->vertices[tri.v[1]].z <= 0.0f ||
-            obj->vertices[tri.v[2]].z <= 0.0f)
+        if (obj->vertices[tri.v[0]].z - camera_position.z <= 0.0f ||
+            obj->vertices[tri.v[1]].z - camera_position.z <= 0.0f ||
+            obj->vertices[tri.v[2]].z - camera_position.z <= 0.0f)
             continue;
         if (projected_signed_area(a, b, c) <= 0.0f)
             continue;
