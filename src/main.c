@@ -41,17 +41,6 @@ object pane = {
     .triangle_count = ARRAY_LEN(pane_triangles),
 };
 
-static vertex screen_to_world(float x, float y, float z)
-{
-    return (vertex){
-        .x = (x - (float)canvas.w / 2.0f) * viewport_w * z /
-             ((float)canvas.w * projection_distance),
-        .y = ((float)canvas.h / 2.0f - y) * viewport_h * z /
-             ((float)canvas.h * projection_distance),
-        .z = z,
-    };
-}
-
 static void delay_frame(const struct timespec *start,
                         const struct timespec *stop);
 
@@ -64,7 +53,8 @@ static void *display_loop(void *input_buffers)
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
-		rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+		rotate_object_relative_to_camera(&pane, 0.0f,
+		                                 (M_PI) / (FPS * 2), 0.0f);
         render_object(&pane);
         present();
         print_all_info(input_buffers);

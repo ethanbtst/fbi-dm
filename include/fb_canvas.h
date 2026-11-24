@@ -106,6 +106,8 @@ point viewport_to_canvas(float x, float y);
 
 point project_vertex(vertex v);
 
+vertex screen_to_world(float x, float y, float depth);
+
 void set_camera_position(float x, float y, float z);
 
 void draw2drectangle_texture(int posX, int posY, int width, int height,
@@ -125,6 +127,9 @@ void xy_rotate_object(object *obj, float angle);
 void yz_rotate_object(object *obj, float angle);
 
 void rotate_object(object *obj, float x_angle, float y_angle, float z_angle);
+
+void rotate_object_relative_to_camera(object *obj, float x_angle,
+                                      float y_angle, float z_angle);
 #endif
 
 #if defined(CANVAS_IMPLEMENTATION) && !defined(CANVAS_IMPLEMENTED)
@@ -552,6 +557,19 @@ void set_camera_position(float x, float y, float z)
     camera_position = (vertex){ .x = x, .y = y, .z = z };
 }
 
+vertex screen_to_world(float x, float y, float depth)
+{
+    return (vertex){
+        .x = camera_position.x +
+             (x - (float)canvas.w / 2.0f) * viewport_w * depth /
+                 ((float)canvas.w * projection_distance),
+        .y = camera_position.y +
+             ((float)canvas.h / 2.0f - y) * viewport_h * depth /
+                 ((float)canvas.h * projection_distance),
+        .z = camera_position.z + depth,
+    };
+}
+
 static float projected_signed_area(point a, point b, point c)
 {
     return (float)(b.x - a.x) * (c.y - a.y) - (float)(b.y - a.y) * (c.x - a.x);
@@ -828,5 +846,49 @@ void rotate_object(object *obj, float x_angle, float y_angle, float z_angle)
     xy_rotate_object(obj, z_angle);
     yz_rotate_object(obj, x_angle);
     xz_rotate_object(obj, y_angle);
+}
+
+void rotate_object_relative_to_camera(object *obj, float x_angle,
+                                      float y_angle, float z_angle)
+{
+    if (obj == NULL || obj->vertices == NULL)
+        return;
+
+    vertex center = get_object_center(obj);
+    center.x -= camera_position.x;
+    center.y -= camera_position.y;
+    center.z -= camera_position.z;
+
+    const float sx = sinf(x_angle);
+    const float cx = cosf(x_angle);
+    const float sy = sinf(y_angle);
+    const float cy = cosf(y_angle);
+    const float sz = sinf(z_angle);
+    const float cz = cosf(z_angle);
+
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        float x = obj->vertices[i].x - camera_position.x - center.x;
+        float y = obj->vertices[i].y - camera_position.y - center.y;
+        float z = obj->vertices[i].z - camera_position.z - center.z;
+
+        float rotated_x = x * cz - y * sz;
+        float rotated_y = x * sz + y * cz;
+        x = rotated_x;
+        y = rotated_y;
+
+        rotated_y = y * cx - z * sx;
+        float rotated_z = y * sx + z * cx;
+        y = rotated_y;
+        z = rotated_z;
+
+        rotated_x = x * cy - z * sy;
+        rotated_z = x * sy + z * cy;
+        x = rotated_x;
+        z = rotated_z;
+
+        obj->vertices[i].x = x + center.x + camera_position.x;
+        obj->vertices[i].y = y + center.y + camera_position.y;
+        obj->vertices[i].z = z + center.z + camera_position.z;
+    }
 }
 #endif
