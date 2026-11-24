@@ -25,12 +25,16 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
-vertex cube_vertices[] = { { 1, 1, 3 },           { -1, 1, 3 },
-                           { -1, -1, 3 },         { 1, -1, 3 },
-                           { 1, 1, 3.0000001 },   { -1, 1, 3.0000001 },
-                           { -1, -1, 3.0000001 }, { 1, -1, 3.0000001 } };
+vertex pane_vertices[] = { {  5,  5, 20 },
+                           { -5,  5, 20 },
+                           { -5, -5, 20 },
+                           {  5, -5, 20 },
+                           {  5,  5, 20.0000001 },   
+                           { -5,  5, 20.0000001 },
+                           { -5, -5, 20.0000001 }, 
+                           {  5, -5, 20.0000001 } };
 
-triangle cube_triangles[] = {
+triangle pane_triangles[] = {
     { .v = { 0, 1, 2 },
       .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
       .color = { 255, 0, 0 } },
@@ -69,11 +73,11 @@ triangle cube_triangles[] = {
       .color = { 0, 0, 255 } },
 };
 
-object cube = {
-    .vertices = cube_vertices,
-    .vertex_count = ARRAY_LEN(cube_vertices),
-    .triangles = cube_triangles,
-    .triangle_count = ARRAY_LEN(cube_triangles),
+object pane = {
+    .vertices = pane_vertices,
+    .vertex_count = ARRAY_LEN(pane_vertices),
+    .triangles = pane_triangles,
+    .triangle_count = ARRAY_LEN(pane_triangles),
 };
 
 static void delay_frame(const struct timespec *start,
@@ -81,7 +85,8 @@ static void delay_frame(const struct timespec *start,
 
 static void *display_loop(void *input_buffers)
 {
-    cube.texture = &large_img;
+    pane.texture = &large_img;
+    translate_object(&pane, -25, 25, 5);
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -91,8 +96,8 @@ static void *display_loop(void *input_buffers)
                                     small_img.height, &small_img);
         draw2drectangle_texture(0, small_img.height, large_img.width,
                                 large_img.height, &large_img);
-        rotate_object(&cube, 0.0f, (M_PI) / (FPS * 2), 0.0f);
-        render_object(&cube);
+        rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+        render_object(&pane);
         present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
