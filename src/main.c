@@ -25,7 +25,16 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
-vertex pane_vertices[8];
+vertex pane_vertices[8] = {
+    { 1.0f, -1.0f, 0.0f },
+    { -1.0f, -1.0f, 0.0f },
+    { -1.0f, 1.0f, 0.0f },
+    { 1.0f, 1.0f, 0.0f },
+    { 1.0f, -1.0f, 0.000001f },
+    { -1.0f, -1.0f, 0.000001f },
+    { -1.0f, 1.0f, 0.000001f },
+    { 1.0f, 1.0f, 0.000001f },
+};
 
 triangle pane_triangles[] = {
     { .v = { 0, 1, 2 },
@@ -145,23 +154,14 @@ int main()
     if (!load_texture(&large_img, opt_big_pic))
         load_texture(&large_img, "/opt/fbi-dm/img/fbi.png");
 
-    set_camera_position(0.0f, 0.0f, 0.0f);
+    // set_camera_position(0.0f, 0.0f, 0.0f);
     pane.texture = &large_img;
-    if (large_img.width > 0 && large_img.height > 0) {
-            set_projection_center((float)(large_img.width - 1) / 2.0f,
-                                  (float)small_img.height +
-                                      (float)(large_img.height - 1) / 2.0f);
-        const float pane_z = 5.0f;
-        float right = (float)(large_img.width - 1);
-        float bottom = (float)(small_img.height + large_img.height - 1);
-        pane_vertices[0] = screen_to_world(right, (float)small_img.height, pane_z);
-        pane_vertices[1] = screen_to_world(0.0f, (float)small_img.height, pane_z);
-        pane_vertices[2] = screen_to_world(0.0f, bottom, pane_z);
-        pane_vertices[3] = screen_to_world(right, bottom, pane_z);
-        for (size_t i = 0; i < 4; ++i) {
-            pane_vertices[i + 4] = pane_vertices[i];
-            pane_vertices[i + 4].z += 0.000001f;
-        }
+    if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height,
+                            (float)large_img.width, (float)large_img.height,
+                            5.0f)) {
+        fprintf(stderr, "Failed to fit 3D object into image area\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term, buf);
+        return 1;
     }
 
     present();

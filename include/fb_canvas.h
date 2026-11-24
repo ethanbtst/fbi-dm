@@ -108,6 +108,10 @@ point project_vertex(vertex v);
 
 vertex screen_to_world(float x, float y, float depth);
 
+/* Fits an object's XY bounds into a screen-pixel rectangle, preserving aspect. */
+bool fit_object_to_area(object *obj, float left, float top, float width,
+                        float height, float depth);
+
 void set_camera_position(float x, float y, float z);
 
 void set_projection_center(float x, float y);
@@ -521,6 +525,89 @@ vertex screen_to_world(float x, float y, float depth)
                  ((float)canvas.h * projection_distance),
         .z = camera_position.z + depth,
     };
+}
+
+bool fit_object_to_area(object *obj, float left, float top, float width,
+                        float height, float depth)
+{
+    if (obj == NULL || obj->vertices == NULL || obj->vertex_count == 0 ||
+        canvas.w <= 0 || canvas.h <= 0 || width <= 1.0f || height <= 1.0f ||
+        depth <= 0.0f || !isfinite(left) || !isfinite(top) ||
+        !isfinite(width) || !isfinite(height) || !isfinite(depth))
+        return false;
+
+    vertex min = obj->vertices[0];
+    vertex max = obj->vertices[0];
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        vertex v = obj->vertices[i];
+        if (!isfinite(v.x) || !isfinite(v.y) || !isfinite(v.z))
+            return false;
+        if (v.x < min.x)
+            min.x = v.x;
+        if (v.y < min.y)
+            min.y = v.y;
+        if (v.z < min.z)
+            min.z = v.z;
+        if (v.x > max.x)
+            max.x = v.x;
+        if (v.y > max.y)
+            max.y = v.y;
+        if (v.z > max.z)
+            max.z = v.z;
+    }
+
+    float model_width = max.x - min.x;
+    float model_height = max.y - min.y;
+    float model_depth = max.z - min.z;
+    if (!isfinite(model_width) || !isfinite(model_height) ||
+        !isfinite(model_depth) || model_width <= 0.0f || model_height <= 0.0f)
+        return false;
+
+    float scale = fminf((width - 1.0f) / model_width,
+                        (height - 1.0f) / model_height);
+    float area_center_x = left + (width - 1.0f) / 2.0f;
+    float area_center_y = top + (height - 1.0f) / 2.0f;
+    float model_center_x = min.x + model_width / 2.0f;
+    float model_center_y = min.y + model_height / 2.0f;
+    float model_center_z = min.z + model_depth / 2.0f;
+    float z_scale =
+        scale * viewport_w * depth /
+        ((float)canvas.w * projection_distance);
+    float max_z_offset =
+        fmaxf(fabsf(min.z - model_center_z), fabsf(max.z - model_center_z));
+    if (!isfinite(scale) || !isfinite(z_scale) || scale <= 0.0f ||
+        z_scale <= 0.0f)
+        return false;
+    if (max_z_offset > 0.0f)
+        z_scale = fminf(z_scale, depth * 0.5f / max_z_offset);
+    if (!isfinite(z_scale) || z_scale <= 0.0f)
+        return false;
+
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        vertex source = obj->vertices[i];
+        float target_x =
+            area_center_x + (source.x - model_center_x) * scale;
+        float target_y =
+            area_center_y + (source.y - model_center_y) * scale;
+        float target_depth =
+            depth + (source.z - model_center_z) * z_scale;
+        if (!isfinite(target_x) || !isfinite(target_y) ||
+            !isfinite(target_depth) || target_depth <= 0.0f)
+            return false;
+    }
+
+    set_projection_center(area_center_x, area_center_y);
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        vertex source = obj->vertices[i];
+        float target_x =
+            area_center_x + (source.x - model_center_x) * scale;
+        float target_y =
+            area_center_y + (source.y - model_center_y) * scale;
+        float target_depth =
+            depth + (source.z - model_center_z) * z_scale;
+        obj->vertices[i] = screen_to_world(target_x, target_y, target_depth);
+    }
+    return true;
 }
 
 void set_projection_center(float x, float y)
