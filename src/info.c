@@ -100,8 +100,7 @@ void print_all_info(input_buffer *input_buffers, size_t input_count)
 
     size_t visible_count = cur_buff < input_count ? cur_buff + 1 : input_count;
     for (size_t i = 0; i < visible_count; ++i) {
-        if (!move(info_curs[CUR_INPUT].row + (int)i,
-                  info_curs[CUR_INPUT].col))
+        if (!move(info_curs[CUR_INPUT].row + (int)i, info_curs[CUR_INPUT].col))
             continue;
         clear_line();
         if (input_buffers[i].show)

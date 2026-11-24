@@ -13,8 +13,10 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
-// Following
-// https://www.gabrielgambetta.com/computer-graphics-from-scratch
+
+// Following https://www.gabrielgambetta.com/computer-graphics-from-scratch
+// And adding whatever else I feel is necessary for framebuffer software
+// rendering
 
 #define ARRAY_LEN(arr) sizeof(arr) / sizeof(arr[0])
 #define frac(x) x - floor(x)
@@ -112,8 +114,6 @@ vertex screen_to_world(float x, float y, float depth);
 bool fit_object_to_area(object *obj, float left, float top, float width,
                         float height, float depth);
 
-void set_camera_position(float x, float y, float z);
-
 void set_projection_center(float x, float y);
 
 void draw2drectangle_texture(int posX, int posY, int width, int height,
@@ -135,9 +135,6 @@ void xy_rotate_object(object *obj, float angle);
 void yz_rotate_object(object *obj, float angle);
 
 void rotate_object(object *obj, float x_angle, float y_angle, float z_angle);
-
-void rotate_object_relative_to_camera(object *obj, float x_angle,
-                                      float y_angle, float z_angle);
 #endif
 
 #if defined(CANVAS_IMPLEMENTATION) && !defined(CANVAS_IMPLEMENTED)
@@ -543,20 +540,15 @@ point project_vertex(vertex v)
     return viewport_to_canvas(projected_x, projected_y);
 }
 
-void set_camera_position(float x, float y, float z)
-{
-    camera_position = (vertex){ .x = x, .y = y, .z = z };
-}
-
 vertex screen_to_world(float x, float y, float depth)
 {
     return (vertex){
-        .x = camera_position.x +
-             (x - projection_center_x) * viewport_w * depth /
-                 ((float)canvas.w * projection_distance),
-        .y = camera_position.y +
-             (projection_center_y - y) * viewport_h * depth /
-                 ((float)canvas.h * projection_distance),
+        .x = camera_position.x + (x - projection_center_x) * viewport_w *
+                                     depth /
+                                     ((float)canvas.w * projection_distance),
+        .y = camera_position.y + (projection_center_y - y) * viewport_h *
+                                     depth /
+                                     ((float)canvas.h * projection_distance),
         .z = camera_position.z + depth,
     };
 }
@@ -597,16 +589,15 @@ bool fit_object_to_area(object *obj, float left, float top, float width,
         !isfinite(model_depth) || model_width <= 0.0f || model_height <= 0.0f)
         return false;
 
-    float scale = fminf((width - 1.0f) / model_width,
-                        (height - 1.0f) / model_height);
+    float scale =
+        fminf((width - 1.0f) / model_width, (height - 1.0f) / model_height);
     float area_center_x = left + (width - 1.0f) / 2.0f;
     float area_center_y = top + (height - 1.0f) / 2.0f;
     float model_center_x = min.x + model_width / 2.0f;
     float model_center_y = min.y + model_height / 2.0f;
     float model_center_z = min.z + model_depth / 2.0f;
     float z_scale =
-        scale * viewport_w * depth /
-        ((float)canvas.w * projection_distance);
+        scale * viewport_w * depth / ((float)canvas.w * projection_distance);
     float max_z_offset =
         fmaxf(fabsf(min.z - model_center_z), fabsf(max.z - model_center_z));
     if (!isfinite(scale) || !isfinite(z_scale) || scale <= 0.0f ||
@@ -619,12 +610,9 @@ bool fit_object_to_area(object *obj, float left, float top, float width,
 
     for (size_t i = 0; i < obj->vertex_count; ++i) {
         vertex source = obj->vertices[i];
-        float target_x =
-            area_center_x + (source.x - model_center_x) * scale;
-        float target_y =
-            area_center_y + (source.y - model_center_y) * scale;
-        float target_depth =
-            depth + (source.z - model_center_z) * z_scale;
+        float target_x = area_center_x + (source.x - model_center_x) * scale;
+        float target_y = area_center_y + (source.y - model_center_y) * scale;
+        float target_depth = depth + (source.z - model_center_z) * z_scale;
         if (!isfinite(target_x) || !isfinite(target_y) ||
             !isfinite(target_depth) || target_depth <= 0.0f)
             return false;
@@ -633,12 +621,9 @@ bool fit_object_to_area(object *obj, float left, float top, float width,
     set_projection_center(area_center_x, area_center_y);
     for (size_t i = 0; i < obj->vertex_count; ++i) {
         vertex source = obj->vertices[i];
-        float target_x =
-            area_center_x + (source.x - model_center_x) * scale;
-        float target_y =
-            area_center_y + (source.y - model_center_y) * scale;
-        float target_depth =
-            depth + (source.z - model_center_z) * z_scale;
+        float target_x = area_center_x + (source.x - model_center_x) * scale;
+        float target_y = area_center_y + (source.y - model_center_y) * scale;
+        float target_depth = depth + (source.z - model_center_z) * z_scale;
         obj->vertices[i] = screen_to_world(target_x, target_y, target_depth);
     }
     return true;
@@ -682,8 +667,8 @@ void draw2drectangle_texture(int posX, int posY, int width, int height,
                              const texture *tex)
 {
     if (tex == NULL || tex->p == NULL || tex->w <= 0 || tex->h <= 0 ||
-        canvas.back_buffer == NULL || canvas.w <= 0 ||
-        canvas.h <= 0 || width <= 0 || height <= 0)
+        canvas.back_buffer == NULL || canvas.w <= 0 || canvas.h <= 0 ||
+        width <= 0 || height <= 0)
         return;
 
     int64_t left = posX;
@@ -717,8 +702,7 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
         canvas.w <= 0 || canvas.h <= 0 || za <= 0.0f || zb <= 0.0f ||
         zc <= 0.0f)
         return;
-    if (tex != NULL &&
-        (tex->p == NULL || tex->w <= 0 || tex->h <= 0))
+    if (tex != NULL && (tex->p == NULL || tex->w <= 0 || tex->h <= 0))
         return;
 
     float area = projected_signed_area(a, b, c);
@@ -800,9 +784,8 @@ void render_triangle(triangle tri, const point *projected,
     point c = projected[tri.v[2]];
 
     if (tex != NULL) {
-        draw_rendered_triangle(a, b, c, vertices[tri.v[0]],
-                               vertices[tri.v[1]], vertices[tri.v[2]],
-                               tri.uv, tex, tri.c);
+        draw_rendered_triangle(a, b, c, vertices[tri.v[0]], vertices[tri.v[1]],
+                               vertices[tri.v[2]], tri.uv, tex, tri.c);
     } else {
         draw_wire_triangle(a, b, c, tri.c);
     }
@@ -959,49 +942,5 @@ void rotate_object(object *obj, float x_angle, float y_angle, float z_angle)
     xy_rotate_object(obj, z_angle);
     yz_rotate_object(obj, x_angle);
     xz_rotate_object(obj, y_angle);
-}
-
-void rotate_object_relative_to_camera(object *obj, float x_angle,
-                                      float y_angle, float z_angle)
-{
-    if (obj == NULL || obj->vertices == NULL)
-        return;
-
-    vertex center = get_object_center(obj);
-    center.x -= camera_position.x;
-    center.y -= camera_position.y;
-    center.z -= camera_position.z;
-
-    const float sx = sinf(x_angle);
-    const float cx = cosf(x_angle);
-    const float sy = sinf(y_angle);
-    const float cy = cosf(y_angle);
-    const float sz = sinf(z_angle);
-    const float cz = cosf(z_angle);
-
-    for (size_t i = 0; i < obj->vertex_count; ++i) {
-        float x = obj->vertices[i].x - camera_position.x - center.x;
-        float y = obj->vertices[i].y - camera_position.y - center.y;
-        float z = obj->vertices[i].z - camera_position.z - center.z;
-
-        float rotated_x = x * cz - y * sz;
-        float rotated_y = x * sz + y * cz;
-        x = rotated_x;
-        y = rotated_y;
-
-        rotated_y = y * cx - z * sx;
-        float rotated_z = y * sx + z * cx;
-        y = rotated_y;
-        z = rotated_z;
-
-        rotated_x = x * cy - z * sy;
-        rotated_z = x * sy + z * cy;
-        x = rotated_x;
-        z = rotated_z;
-
-        obj->vertices[i].x = x + center.x + camera_position.x;
-        obj->vertices[i].y = y + center.y + camera_position.y;
-        obj->vertices[i].z = z + center.z + camera_position.z;
-    }
 }
 #endif

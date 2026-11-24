@@ -31,8 +31,8 @@ void default_config()
     strcpy(opt_big_pic, "distro");
     opt_small_max_h = 80;
     opt_small_max_w = 80;
-    opt_big_max_h = 340;
-    opt_big_max_w = 340;
+    opt_big_max_h = 300;
+    opt_big_max_w = 300;
     opt_spin = false;
     opt_rot_period = 4.0f;
 

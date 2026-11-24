@@ -83,7 +83,7 @@ static void delay_frame(const struct timespec *start,
 static void *display_loop(void *input_buffers)
 {
     pane.texture = &large_img;
-    float d_angle = (2.0 * M_PI)  / (opt_rot_period * FPS);
+    float d_angle = (2.0 * M_PI) / (opt_rot_period * FPS);
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -152,12 +152,14 @@ int main()
 
     if (!resize_texture(&small_img, opt_small_max_w, opt_small_max_h) ||
         !resize_texture(&large_img, opt_big_max_w, opt_big_max_h)) {
-        fprintf(stderr, "Failed to fit loaded textures within configured limits\n");
+        fprintf(stderr,
+                "Failed to fit loaded textures within configured limits\n");
         cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
                 &canvas);
         return 1;
     }
 
+    // Image and text dimensions
     struct winsize w = { 0 };
     if (ioctl(STDIN_FILENO, TIOCGWINSZ, &w) == -1) {
         perror("Failed to get terminal dimensions");
@@ -175,7 +177,8 @@ int main()
     int font_height = canvas.h / w.ws_row;
     int font_width = canvas.w / w.ws_col;
     if (font_height == 0 || font_width == 0) {
-        fprintf(stderr, "Framebuffer is too small for the terminal dimensions\n");
+        fprintf(stderr,
+                "Framebuffer is too small for the terminal dimensions\n");
         cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
                 &canvas);
         return 1;
@@ -186,9 +189,9 @@ int main()
         pane_vertices[i].x *= image_aspect;
 
     int info_rows = info_rows_before_controls();
-    float minimum_image_height = (float)info_rows * (float)font_height;
-    float image_area_height = fmaxf((float)large_img.h, minimum_image_height);
-    float pane_height = image_area_height;
+    float min_image_height = (float)info_rows * (float)font_height;
+    float img_height = fmaxf((float)large_img.h, min_image_height);
+    float pane_height = img_height;
     float pane_width = pane_height * image_aspect;
     if (pane_width > (float)canvas.w) {
         pane_width = (float)canvas.w;
@@ -203,11 +206,8 @@ int main()
         return 1;
     }
 
-    present();
-
-    // Text positioning
     int info_start_row = (small_img.h / font_height) + 2;
-    int controls_row = (int)((pane_top + image_area_height) / font_height) + 2;
+    int controls_row = (int)((pane_top + img_height) / font_height) + 2;
     int min_controls_row = info_start_row + info_rows;
     if (controls_row < min_controls_row)
         controls_row = min_controls_row;

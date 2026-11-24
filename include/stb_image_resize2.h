@@ -1827,7 +1827,7 @@ static const stbir__simdf STBIR_onezeros = { 1.0f, 0.0f, 1.0f, 0.0f };
 #define stbir__simdi_32shr(out, reg, imm) out = _mm_srli_epi32(reg, imm)
 
 #if defined(_MSC_VER) && !defined(__clang__)
-    // msvc inits with 8 bytes
+// msvc inits with 8 bytes
 #define STBIR__CONST_32_TO_8(v)                                                \
     (char)(unsigned char)((v) & 255), (char)(unsigned char)(((v) >> 8) & 255), \
         (char)(unsigned char)(((v) >> 16) & 255),                              \
@@ -1839,7 +1839,7 @@ static const stbir__simdf STBIR_onezeros = { 1.0f, 0.0f, 1.0f, 0.0f };
     STBIR__CONST_32_TO_8(v0), STBIR__CONST_32_TO_8(v1), \
         STBIR__CONST_32_TO_8(v2), STBIR__CONST_32_TO_8(v3)
 #else
-    // everything else inits with long long's
+// everything else inits with long long's
 #define STBIR__CONST_4_32i(v)                                   \
     (long long)((((stbir_uint64)(stbir_uint32)(v)) << 32) |     \
                 ((stbir_uint64)(stbir_uint32)(v))),             \
@@ -1942,7 +1942,7 @@ static STBIR__SIMDI_CONST(stbir__s16_32768, ((32768 << 16) | 32768));
 
 #ifdef STBIR_AVX2
 
-    // vpmovzxbd takes eight bytes to eight dwords in one shuffle, so sixteen bytes are three (the high eight moved down first)
+// vpmovzxbd takes eight bytes to eight dwords in one shuffle, so sixteen bytes are three (the high eight moved down first)
 #define stbir__simdi8_expand_u8_to_u32(out0, out1, ireg)             \
     {                                                                \
         out0 = _mm256_cvtepu8_epi32(ireg);                           \
@@ -1971,7 +1971,7 @@ static STBIR__SIMDI_CONST(stbir__s16_32768, ((32768 << 16) | 32768));
 #define stbir__simdi8_expand_u16_to_u32(out, ireg) \
     out = _mm256_cvtepu16_epi32(ireg);
 
-    // a byte permute of 32 bytes by one 16 byte table, per 128-bit lane (vpshufb ymm)
+// a byte permute of 32 bytes by one 16 byte table, per 128-bit lane (vpshufb ymm)
 #define stbir__simdi8_shuffle_bytes(out, reg, table) \
     (out) = _mm256_shuffle_epi8((reg), _mm256_broadcastsi128_si256(table))
 
@@ -2235,7 +2235,7 @@ static const stbir__simdf8 STBIR_max_uint16_as_float8 = {
         add, _mm512_mul_ps(mul, _mm512_loadu_ps((float const *)(ptr))))
 #endif
 
-    // the per lane shuffles: one 4-wide order, applied in every lane
+// the per lane shuffles: one 4-wide order, applied in every lane
 #define stbir__simdf16_0123to0123(out, in) (out) = (in)
 #define stbir__simdf16_0123to1230(out, in) \
     (out) = _mm512_shuffle_ps(in, in, (1 << 0) + (2 << 2) + (3 << 4) + (0 << 6))
@@ -2248,7 +2248,7 @@ static const stbir__simdf8 STBIR_max_uint16_as_float8 = {
 #define stbir__simdf16_0123to3012(out, in) \
     (out) = _mm512_shuffle_ps(in, in, (3 << 0) + (0 << 2) + (1 << 4) + (2 << 6))
 
-    // the alpha patterns: blend the ones in (the mask repeats per lane), then shuffle each lane
+// the alpha patterns: blend the ones in (the mask repeats per lane), then shuffle each lane
 #define stbir__simdf16_aaa1(out, alp, ones)                                   \
     do {                                                                      \
         (out) = _mm512_mask_blend_ps((__mmask16)0x7777, alp, ones);           \
@@ -2274,7 +2274,7 @@ static const stbir__simdf8 STBIR_max_uint16_as_float8 = {
                                   (1 << 0) + (0 << 2) + (3 << 4) + (2 << 6)); \
     } while (0)
 
-    // integer conversions: sixteen bytes or words to sixteen dwords in one op, and the saturating narrows back
+// integer conversions: sixteen bytes or words to sixteen dwords in one op, and the saturating narrows back
 #define stbir__simdi16_expand_u8_to_u32(out, ireg) \
     (out) = _mm512_cvtepu8_epi32(ireg)
 #define stbir__simdi16_expand_u16_to_u32(out, ireg) \
@@ -2541,7 +2541,7 @@ static stbir__inline uint8x16x2_t stbir_make16x2(float32x4_t rega,
     vreinterpretq_f32_u8(vqtbl2q_u8(stbir_make16x2(rega, regb), \
                                     stbir_make16(one, two, three, four)))
 
-    // an arbitrary byte permute
+// an arbitrary byte permute
 #define STBIR_SIMD_BYTE_SHUFFLE
 #define stbir__simdi_shuffle_bytes(out, reg, table) \
     (out) = vreinterpretq_u32_u8(                   \
