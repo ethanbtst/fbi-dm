@@ -87,12 +87,12 @@ static void delay_frame(const struct timespec *start,
 
 static void *display_loop(void *input_buffers)
 {
+    pane.texture = &large_img;
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
         clear();
-		rotate_object_relative_to_camera(&pane, 0.0f,
-		                                 (M_PI) / (FPS * 2), 0.0f);
+		rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
         render_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
@@ -154,8 +154,6 @@ int main()
     if (!load_texture(&large_img, opt_big_pic))
         load_texture(&large_img, "/opt/fbi-dm/img/fbi.png");
 
-    // set_camera_position(0.0f, 0.0f, 0.0f);
-    pane.texture = &large_img;
     if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height,
                             (float)large_img.width, (float)large_img.height,
                             5.0f)) {
