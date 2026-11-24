@@ -158,7 +158,7 @@ int main()
         return 1;
     }
 
-    if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height,
+    if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height + 5,
                             (float)large_img.width, (float)large_img.height,
                             5.0f)) {
         fprintf(stderr, "Failed to fit 3D object into image area\n");

@@ -145,8 +145,7 @@ void rotate_object_relative_to_camera(object *obj, float x_angle,
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBIR__HEADER_FILENAME "stb_image_resize.h"
-#include "stb_image_resize.h"
+#include "stb_image_resize2.h"
 
 buffer canvas;
 const float viewport_h = 2.0f;
