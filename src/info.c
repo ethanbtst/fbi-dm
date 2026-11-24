@@ -13,6 +13,24 @@ int max_brightness;
 int brightness;
 cursor info_curs[CUR_NUM_MAX];
 
+int info_rows_before_controls(void)
+{
+    int rows = 2;
+    if (strlen(opt_top_text) != 0)
+        rows += 2;
+    if (opt_hostname)
+        rows += 2;
+    if (opt_kernel)
+        rows += 2;
+    if (strlen(opt_date) != 0)
+        rows += 2;
+    if (strlen(opt_time) != 0)
+        rows += 2;
+    if (opt_battery)
+        rows += 2;
+    return rows;
+}
+
 void set_cursors_info(int start_row, int start_col, int line_count_down)
 {
     move(start_row, start_col);
@@ -53,7 +71,7 @@ void set_cursors_info(int start_row, int start_col, int line_count_down)
     info_curs[CUR_INPUT] = (cursor){ .row = line_count_down + 2, .col = 0 };
 }
 
-void print_all_info(input_buffer *input_buffers)
+void print_all_info(input_buffer *input_buffers, size_t input_count)
 {
     if (move(info_curs[CUR_TOP_TEXT].row, info_curs[CUR_TOP_TEXT].col))
         printf("%s", opt_top_text);
@@ -80,14 +98,16 @@ void print_all_info(input_buffer *input_buffers)
         printf("\n\n");
     }
 
-    move(info_curs[CUR_INPUT].row, info_curs[CUR_INPUT].col);
-    clear_line();
-
-    if (input_buffers[cur_buff].show)
-        printf("%s: %s", input_buffers[cur_buff].name,
-               input_buffers[cur_buff].buffer);
-    else
-        printf("%s: ", input_buffers[cur_buff].name);
+    size_t visible_count = cur_buff < input_count ? cur_buff + 1 : input_count;
+    for (size_t i = 0; i < visible_count; ++i) {
+        if (!move(info_curs[CUR_INPUT].row + (int)i, info_curs[CUR_INPUT].col))
+            continue;
+        clear_line();
+        if (input_buffers[i].show)
+            printf("%s: %s", input_buffers[i].name, input_buffers[i].buffer);
+        else
+            printf("%s: ", input_buffers[i].name);
+    }
     fflush(stdout);
 }
 

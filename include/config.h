@@ -9,6 +9,8 @@ extern int opt_small_max_h;
 extern int opt_small_max_w;
 extern int opt_big_max_h;
 extern int opt_big_max_w;
+extern bool opt_spin;
+extern float opt_rot_period;
 
 extern bool opt_hostname;
 extern bool opt_kernel;

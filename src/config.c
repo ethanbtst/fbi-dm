@@ -2,6 +2,8 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <math.h>
 
 #include "config.h"
 #include "parser.h"
@@ -12,6 +14,8 @@ int opt_small_max_h;
 int opt_small_max_w;
 int opt_big_max_h;
 int opt_big_max_w;
+bool opt_spin;
+float opt_rot_period;
 
 bool opt_hostname;
 bool opt_kernel;
@@ -27,8 +31,10 @@ void default_config()
     strcpy(opt_big_pic, "distro");
     opt_small_max_h = 80;
     opt_small_max_w = 80;
-    opt_big_max_h = 260;
-    opt_big_max_w = 260;
+    opt_big_max_h = 340;
+    opt_big_max_w = 340;
+    opt_spin = false;
+    opt_rot_period = 4.0f;
 
     strcpy(opt_top_text, "Welcome!");
     opt_hostname = true;
@@ -58,6 +64,22 @@ void set_distro_logo()
                      "/opt/fbi-dm/img/distro_logos/%s.png", value);
     }
     fclose(fd);
+}
+
+static void set_rotation_period(const char *value)
+{
+    char *end;
+    errno = 0;
+    float period = strtof(value, &end);
+    if (errno == ERANGE || end == value || *end != '\0' || !isfinite(period) ||
+        period <= 0.0f) {
+        fprintf(stderr,
+                "Invalid rotation_period '%s'; expected positive seconds\n",
+                value);
+        return;
+    }
+
+    opt_rot_period = period;
 }
 
 void get_config()
@@ -92,6 +114,13 @@ void get_config()
 
         if (strcmp(option, "big_max_w") == 0)
             opt_big_max_w = atoi(value);
+
+        if (strcmp(option, "spin") == 0)
+            if (strcasecmp(value, "true") == 0)
+                opt_spin = true;
+
+        if (strcmp(option, "rotation_period") == 0)
+            set_rotation_period(value);
 
         if (strcmp(option, "top_text") == 0)
             strcpy(opt_top_text, value);
