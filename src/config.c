@@ -82,12 +82,6 @@ void get_config()
         if (strcmp(option, "spin") == 0) {
             if (strcasecmp(value, "true") == 0)
                 opt_spin = true;
-            else if (strcasecmp(value, "false") == 0)
-                opt_spin = false;
-            else
-                fprintf(stderr, "Invalid spin value '%s'; expected true or false\n",
-                        value);
-        }
 
         if (strcmp(option, "rotation_period") == 0) {
             char *end;
