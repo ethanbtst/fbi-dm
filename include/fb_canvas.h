@@ -138,8 +138,6 @@ void rotate_object_relative_to_camera(object *obj, float x_angle,
 #define CANVAS_IMPLEMENTED
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb_image_resize2.h"
 
 buffer canvas;
 const float viewport_h = 2.0f;
@@ -184,61 +182,6 @@ void destroy_texture(texture *tex)
         return;
     stbi_image_free(tex->pixels);
     *tex = (texture){ 0 };
-}
-
-bool resize_texture(texture *tex, int max_width, int max_height)
-{
-    if (tex == NULL || tex->pixels == NULL || tex->width <= 0 ||
-        tex->height <= 0 || max_width <= 0 || max_height <= 0)
-        return false;
-
-    if (tex->width <= max_width && tex->height <= max_height)
-        return true;
-
-    int new_width;
-    int new_height;
-    if ((long long)max_width * tex->height <
-        (long long)max_height * tex->width) {
-        new_width = max_width;
-        new_height =
-            (int)(((long long)tex->height * max_width + tex->width / 2) /
-                  tex->width);
-    } else {
-        new_height = max_height;
-        new_width =
-            (int)(((long long)tex->width * max_height + tex->height / 2) /
-                  tex->height);
-    }
-
-    if (new_width < 1)
-        new_width = 1;
-    if (new_height < 1)
-        new_height = 1;
-    if ((size_t)new_width > SIZE_MAX / (size_t)new_height ||
-        (size_t)new_width * (size_t)new_height >
-            SIZE_MAX / (STBI_rgb * sizeof(*tex->pixels)))
-        return false;
-
-    size_t pixel_count = (size_t)new_width * (size_t)new_height;
-    unsigned char *resized_pixels =
-        malloc(pixel_count * STBI_rgb * sizeof(*resized_pixels));
-    if (resized_pixels == NULL)
-        return false;
-
-    unsigned char *resized = stbir_resize_uint8_srgb(
-        tex->pixels, tex->width, tex->height,
-        (stbir_int64)tex->width * STBI_rgb, resized_pixels, new_width,
-        new_height, (stbir_int64)new_width * STBI_rgb, STBIR_RGB);
-    if (resized == NULL) {
-        free(resized_pixels);
-        return false;
-    }
-
-    stbi_image_free(tex->pixels);
-    tex->width = new_width;
-    tex->height = new_height;
-    tex->pixels = resized_pixels;
-    return true;
 }
 
 bool create_buffer(buffer *fb, const char *device)
@@ -733,6 +676,7 @@ void render_triangle(triangle tri, const point *projected,
     point b = projected[tri.v[1]];
     point c = projected[tri.v[2]];
 
+	
     draw_rendered_triangle(a, b, c, vertices[tri.v[0]], vertices[tri.v[1]],
                            vertices[tri.v[2]], tri.uv, tex, tri.color);
 }

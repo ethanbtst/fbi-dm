@@ -88,7 +88,6 @@ static void *display_loop(void *input_buffers)
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
-
         present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
@@ -146,13 +145,8 @@ int main()
     if (!load_texture(&large_img, opt_big_pic))
         load_texture(&large_img, "/opt/fbi-dm/img/fbi.png");
 
-    if (!resize_texture(&small_img, opt_small_max_w, opt_small_max_h))
-        fprintf(stderr, "Failed to fit small image within configured limits\n");
-    if (!resize_texture(&large_img, opt_big_max_w, opt_big_max_h))
-        fprintf(stderr, "Failed to fit big image within configured limits\n");
-
     set_camera_position(0.0f, 0.0f, 0.0f);
-    pane.texture = &large_img;
+    // pane.texture = &large_img;
     if (large_img.width > 0 && large_img.height > 0) {
             set_projection_center((float)(large_img.width - 1) / 2.0f,
                                   (float)small_img.height +
@@ -168,7 +162,8 @@ int main()
         pane_vertices[3] = screen_to_world(right, bottom, pane_z);
         for (size_t i = 0; i < 4; ++i) {
             pane_vertices[i + 4] = pane_vertices[i];
-            pane_vertices[i + 4].z += 0.00001f;
+            // pane_vertices[i + 4].z += 0.00001f;
+            pane_vertices[i + 4].z += 2.0f;
         }
     }
 
