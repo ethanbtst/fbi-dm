@@ -144,6 +144,9 @@ void rotate_object_relative_to_camera(object *obj, float x_angle,
 #define CANVAS_IMPLEMENTED
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STBIR__HEADER_FILENAME "stb_image_resize.h"
+#include "stb_image_resize.h"
 
 buffer canvas;
 const float viewport_h = 2.0f;
@@ -188,6 +191,39 @@ void destroy_texture(texture *tex)
         return;
     stbi_image_free(tex->pixels);
     *tex = (texture){ 0 };
+}
+
+bool resize_texture(texture *tex, int max_width, int max_height)
+{
+    if (tex == NULL || tex->pixels == NULL || tex->width <= 0 ||
+        tex->height <= 0 || max_width <= 0 || max_height <= 0)
+        return false;
+
+    if (tex->width <= max_width && tex->height <= max_height)
+        return true;
+
+    float scale = fminf((float)max_width / (float)tex->width,
+                        (float)max_height / (float)tex->height);
+    int width = (int)floorf((float)tex->width * scale);
+    int height = (int)floorf((float)tex->height * scale);
+    if (width < 1)
+        width = 1;
+    if (height < 1)
+        height = 1;
+
+    unsigned char *pixels = stbir_resize_uint8_srgb(
+        tex->pixels, tex->width, tex->height, 0, NULL, width, height, 0,
+        STBIR_RGB);
+    if (pixels == NULL) {
+        fprintf(stderr, "Failed to resize texture to %dx%d\n", width, height);
+        return false;
+    }
+
+    stbi_image_free(tex->pixels);
+    tex->pixels = pixels;
+    tex->width = width;
+    tex->height = height;
+    return true;
 }
 
 bool create_buffer(buffer *fb, const char *device)

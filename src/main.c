@@ -150,6 +150,14 @@ int main()
     if (!load_texture(&large_img, opt_big_pic))
         load_texture(&large_img, "/opt/fbi-dm/img/fbi.png");
 
+    if (!resize_texture(&small_img, opt_small_max_w, opt_small_max_h) ||
+        !resize_texture(&large_img, opt_big_max_w, opt_big_max_h)) {
+        fprintf(stderr, "Failed to fit loaded textures within configured limits\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+
     if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height,
                             (float)large_img.width, (float)large_img.height,
                             5.0f)) {
