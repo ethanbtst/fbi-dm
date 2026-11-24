@@ -13,6 +13,24 @@ int max_brightness;
 int brightness;
 cursor info_curs[CUR_NUM_MAX];
 
+int info_rows_before_controls(void)
+{
+    int rows = 2;
+    if (strlen(opt_top_text) != 0)
+        rows += 2;
+    if (opt_hostname)
+        rows += 2;
+    if (opt_kernel)
+        rows += 2;
+    if (strlen(opt_date) != 0)
+        rows += 2;
+    if (strlen(opt_time) != 0)
+        rows += 2;
+    if (opt_battery)
+        rows += 2;
+    return rows;
+}
+
 void set_cursors_info(int start_row, int start_col, int line_count_down)
 {
     move(start_row, start_col);

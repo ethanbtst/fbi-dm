@@ -91,7 +91,7 @@ static void *display_loop(void *input_buffers)
 
         if (opt_spin)
             rotate_object(&pane, 0.0f, d_angle, 0.0f);
-            
+
         render_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
@@ -158,8 +158,45 @@ int main()
         return 1;
     }
 
-    if (!fit_object_to_area(&pane, 0.0f, (float)small_img.height + 5,
-                            (float)large_img.width, (float)large_img.height,
+    struct winsize w;
+    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &w) == -1) {
+        perror("Failed to get terminal size");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+    if (w.ws_row == 0 || w.ws_col == 0) {
+        fprintf(stderr, "Invalid terminal size\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+
+    int font_height = canvas.h / w.ws_row;
+    int font_width = canvas.w / w.ws_col;
+    if (font_height <= 0 || font_width <= 0) {
+        fprintf(stderr, "Terminal font dimensions are invalid\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+
+    float image_aspect = (float)large_img.width / (float)large_img.height;
+    for (size_t i = 0; i < ARRAY_LEN(pane_vertices); ++i)
+        pane_vertices[i].x *= image_aspect;
+
+    int info_rows = info_rows_before_controls();
+    float minimum_image_height = (float)info_rows * (float)font_height;
+    float image_area_height =
+        fmaxf((float)large_img.height, minimum_image_height);
+    float pane_height = image_area_height;
+    float pane_width = pane_height * image_aspect;
+    if (pane_width > (float)canvas.w) {
+        pane_width = (float)canvas.w;
+        pane_height = pane_width / image_aspect;
+    }
+    const float pane_top = (float)small_img.height + 5.0f;
+    if (!fit_object_to_area(&pane, 0.0f, pane_top, pane_width, pane_height,
                             5.0f)) {
         fprintf(stderr, "Failed to fit 3D object into image area\n");
         cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
@@ -170,18 +207,18 @@ int main()
     present();
 
     // Text positioning
-    struct winsize w;
-    ioctl(STDERR_FILENO, TIOCGWINSZ, &w);
-    int font_height = canvas.h / w.ws_row;
-    int font_width = canvas.w / w.ws_col;
-    int right = large_img.width / font_width + 2;
+    int info_start_row = (small_img.height / font_height) + 2;
+    int controls_row = (int)((pane_top + image_area_height) / font_height) + 2;
+    int min_controls_row = info_start_row + info_rows;
+    if (controls_row < min_controls_row)
+        controls_row = min_controls_row;
+    int right = (int)ceilf(pane_width / (float)font_width) + 2;
 
     sessions = get_sessions(&session_count);
     if ((session_cur = get_session_index(session_count)) == -1)
         session_cur = (int)session_count;
 
-    set_cursors_info((small_img.height / font_height) + 2, right,
-                     ((small_img.height + large_img.height) / font_height) + 2);
+    set_cursors_info(info_start_row, right, controls_row);
 
     // Text input
     input_buffer in[2];
