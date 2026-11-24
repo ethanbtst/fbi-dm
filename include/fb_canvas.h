@@ -110,6 +110,8 @@ vertex screen_to_world(float x, float y, float depth);
 
 void set_camera_position(float x, float y, float z);
 
+void set_projection_center(float x, float y);
+
 void draw2drectangle_texture(int posX, int posY, int width, int height,
                              const texture *tex);
 
@@ -144,6 +146,8 @@ const float viewport_h = 2.0f;
 const float projection_distance = 1.0f;
 float viewport_w = 3.2f;
 vertex camera_position = { 0 };
+static float projection_center_x;
+static float projection_center_y;
 
 bool load_texture(texture *tex, const char *filename)
 {
@@ -279,6 +283,8 @@ bool create_buffer(buffer *fb, const char *device)
     }
     if (fb->h > 0)
         viewport_w = viewport_h * (float)fb->w / (float)fb->h;
+    projection_center_x = (float)fb->w / 2.0f;
+    projection_center_y = (float)fb->h / 2.0f;
     fb->fbp = mmap(NULL, fb->screensize, PROT_READ | PROT_WRITE, MAP_SHARED,
                    fb->fd, 0);
 
@@ -534,8 +540,10 @@ void draw_filled_triangle(point p0, point p1, point p2, colour c)
 point viewport_to_canvas(float x, float y)
 {
     return (point){
-        .x = (int)lroundf(x * (float)canvas.w / viewport_w),
-        .y = (int)lroundf(y * (float)canvas.h / viewport_h),
+        .x = (int)lroundf(x * (float)canvas.w / viewport_w +
+                          projection_center_x - (float)canvas.w / 2.0f),
+        .y = (int)lroundf(y * (float)canvas.h / viewport_h +
+                          (float)canvas.h / 2.0f - projection_center_y),
     };
 }
 
@@ -561,13 +569,19 @@ vertex screen_to_world(float x, float y, float depth)
 {
     return (vertex){
         .x = camera_position.x +
-             (x - (float)canvas.w / 2.0f) * viewport_w * depth /
+             (x - projection_center_x) * viewport_w * depth /
                  ((float)canvas.w * projection_distance),
         .y = camera_position.y +
-             ((float)canvas.h / 2.0f - y) * viewport_h * depth /
+             (projection_center_y - y) * viewport_h * depth /
                  ((float)canvas.h * projection_distance),
         .z = camera_position.z + depth,
     };
+}
+
+void set_projection_center(float x, float y)
+{
+    projection_center_x = x;
+    projection_center_y = y;
 }
 
 static float projected_signed_area(point a, point b, point c)

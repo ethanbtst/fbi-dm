@@ -25,13 +25,45 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
-vertex pane_vertices[4];
+vertex pane_vertices[8];
 
 triangle pane_triangles[] = {
     { .v = { 0, 1, 2 },
-      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } } },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
     { .v = { 0, 2, 3 },
-      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } } },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 0, 3 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 4, 3, 7 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 5, 4, 7 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 5, 7, 6 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 1, 5, 6 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 1, 6, 2 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 5, 1 },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 4, 1, 0 },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 2, 6, 7 },
+      .uv = { { 0, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 2, 7, 3 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 1, 0 } },
+      .color = { 0, 0, 255 } },
 };
 
 object pane = {
@@ -50,12 +82,13 @@ static void *display_loop(void *input_buffers)
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
         clear();
-        for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
-            draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
-                                    small_img.height, &small_img);
 		rotate_object_relative_to_camera(&pane, 0.0f,
 		                                 (M_PI) / (FPS * 2), 0.0f);
         render_object(&pane);
+        for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
+            draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
+                                    small_img.height, &small_img);
+
         present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
@@ -121,6 +154,9 @@ int main()
     set_camera_position(0.0f, 0.0f, 0.0f);
     pane.texture = &large_img;
     if (large_img.width > 0 && large_img.height > 0) {
+            set_projection_center((float)(large_img.width - 1) / 2.0f,
+                                  (float)small_img.height +
+                                      (float)(large_img.height - 1) / 2.0f);
         const float pane_z = 5.0f;
         float right = (float)(large_img.width - 1);
         float bottom = (float)(small_img.height + large_img.height - 1);
@@ -130,6 +166,10 @@ int main()
             screen_to_world(0.0f, (float)small_img.height, pane_z);
         pane_vertices[2] = screen_to_world(0.0f, bottom, pane_z);
         pane_vertices[3] = screen_to_world(right, bottom, pane_z);
+        for (size_t i = 0; i < 4; ++i) {
+            pane_vertices[i + 4] = pane_vertices[i];
+            pane_vertices[i + 4].z += 0.00001f;
+        }
     }
 
     present();
