@@ -94,8 +94,8 @@ static void *display_loop(void *input_buffers)
 
         render_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
-            draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
-                                    small_img.height, &small_img);
+            draw2drectangle_texture(4 + i * small_img.w, 0, small_img.w,
+                                    small_img.h, &small_img);
         present();
         print_all_info(input_buffers, 2);
         clock_gettime(CLOCK_MONOTONIC, &stop);
@@ -162,20 +162,20 @@ int main()
     int font_height = canvas.h / w.ws_row;
     int font_width = canvas.w / w.ws_col;
 
-    float image_aspect = (float)large_img.width / (float)large_img.height;
+    float image_aspect = (float)large_img.w / (float)large_img.h;
     for (size_t i = 0; i < ARRAY_LEN(pane_vertices); ++i)
         pane_vertices[i].x *= image_aspect;
 
     int info_rows = info_rows_before_controls();
     float minimum_image_height = (float)info_rows * (float)font_height;
-    float image_area_height = fmaxf((float)large_img.height, minimum_image_height);
+    float image_area_height = fmaxf((float)large_img.h, minimum_image_height);
     float pane_height = image_area_height;
     float pane_width = pane_height * image_aspect;
     if (pane_width > (float)canvas.w) {
         pane_width = (float)canvas.w;
         pane_height = pane_width / image_aspect;
     }
-    const float pane_top = (float)small_img.height + 5.0f;
+    const float pane_top = (float)small_img.h + 5.0f;
     if (!fit_object_to_area(&pane, 0.0f, pane_top, pane_width, pane_height,
                             5.0f)) {
         fprintf(stderr, "Failed to fit 3D object into image area\n");
@@ -187,7 +187,7 @@ int main()
     present();
 
     // Text positioning
-    int info_start_row = (small_img.height / font_height) + 2;
+    int info_start_row = (small_img.h / font_height) + 2;
     int controls_row = (int)((pane_top + image_area_height) / font_height) + 2;
     int min_controls_row = info_start_row + info_rows;
     if (controls_row < min_controls_row)

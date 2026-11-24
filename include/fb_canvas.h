@@ -33,18 +33,18 @@ typedef struct {
     uint8_t r;
     uint8_t g;
     uint8_t b;
-} colour;
+} c;
 
 typedef struct {
-    int width;
-    int height;
-    unsigned char *pixels;
+    int w;
+    int h;
+    unsigned char *p;
 } texture;
 
 typedef struct {
     int v[3];
     float uv[3][2];
-    colour color;
+    c color;
 } triangle;
 
 typedef struct {
@@ -86,7 +86,7 @@ void destroy_buffer(buffer *fb);
 
 void swap_points(point *p0, point *p1);
 
-void put_pixel(int x, int y, colour c);
+void put_pixel(int x, int y, c color);
 
 void draw2drectangle(int posX, int posY, int width, int height);
 
@@ -96,11 +96,11 @@ void present();
 
 int *interpolate(int i0, int d0, int i1, int d1);
 
-void draw_line(point p0, point p1, colour c);
+void draw_line(point p0, point p1, c color);
 
-void draw_wire_triangle(point p0, point p1, point p2, colour c);
+void draw_wire_triangle(point p0, point p1, point p2, c color);
 
-void draw_filled_triangle(point p0, point p1, point p2, colour c);
+void draw_filled_triangle(point p0, point p1, point p2, c color);
 
 point viewport_to_canvas(float x, float y);
 
@@ -178,9 +178,9 @@ bool load_texture(texture *tex, const char *filename)
         return false;
     }
 
-    tex->width = width;
-    tex->height = height;
-    tex->pixels = pixels;
+    tex->w = width;
+    tex->h = height;
+    tex->p = pixels;
     return true;
 }
 
@@ -188,40 +188,39 @@ void destroy_texture(texture *tex)
 {
     if (tex == NULL)
         return;
-    stbi_image_free(tex->pixels);
+    stbi_image_free(tex->p);
     *tex = (texture){ 0 };
 }
 
 bool resize_texture(texture *tex, int max_width, int max_height)
 {
-    if (tex == NULL || tex->pixels == NULL || tex->width <= 0 ||
-        tex->height <= 0 || max_width <= 0 || max_height <= 0)
+    if (tex == NULL || tex->p == NULL || tex->w <= 0 || tex->h <= 0 ||
+        max_width <= 0 || max_height <= 0)
         return false;
 
-    if (tex->width <= max_width && tex->height <= max_height)
+    if (tex->w <= max_width && tex->h <= max_height)
         return true;
 
-    float scale = fminf((float)max_width / (float)tex->width,
-                        (float)max_height / (float)tex->height);
-    int width = (int)floorf((float)tex->width * scale);
-    int height = (int)floorf((float)tex->height * scale);
+    float scale = fminf((float)max_width / (float)tex->w,
+                        (float)max_height / (float)tex->h);
+    int width = (int)floorf((float)tex->w * scale);
+    int height = (int)floorf((float)tex->h * scale);
     if (width < 1)
         width = 1;
     if (height < 1)
         height = 1;
 
     unsigned char *pixels = stbir_resize_uint8_srgb(
-        tex->pixels, tex->width, tex->height, 0, NULL, width, height, 0,
-        STBIR_RGB);
+        tex->p, tex->w, tex->h, 0, NULL, width, height, 0, STBIR_RGB);
     if (pixels == NULL) {
         fprintf(stderr, "Failed to resize texture to %dx%d\n", width, height);
         return false;
     }
 
-    stbi_image_free(tex->pixels);
-    tex->pixels = pixels;
-    tex->width = width;
-    tex->height = height;
+    stbi_image_free(tex->p);
+    tex->p = pixels;
+    tex->w = width;
+    tex->h = height;
     return true;
 }
 
@@ -335,7 +334,7 @@ void swap_points(point *p0, point *p1)
     *p0 = tmp;
 }
 
-void put_pixel(int x, int y, colour c)
+void put_pixel(int x, int y, c color)
 {
     int bytes_per_pixel = canvas.bpp / 8;
 
@@ -347,17 +346,17 @@ void put_pixel(int x, int y, colour c)
     size_t location =
         (size_t)sy * canvas.line_length + (size_t)sx * bytes_per_pixel;
 
-    canvas.back_buffer[location] = (char)c.b;
-    canvas.back_buffer[location + 1] = (char)c.g;
-    canvas.back_buffer[location + 2] = (char)c.r;
+    canvas.back_buffer[location] = (char)color.b;
+    canvas.back_buffer[location + 1] = (char)color.g;
+    canvas.back_buffer[location + 2] = (char)color.r;
 
     if (bytes_per_pixel == 4)
         canvas.back_buffer[location + 3] = (char)255;
 }
 
-static void put_pixel_2d(int x, int y, colour c)
+static void put_pixel_2d(int x, int y, c color)
 {
-    put_pixel(x - canvas.w / 2, canvas.h / 2 - y, c);
+    put_pixel(x - canvas.w / 2, canvas.h / 2 - y, color);
 }
 
 void draw2drectangle(int posX, int posY, int width, int height)
@@ -377,7 +376,7 @@ void draw2drectangle(int posX, int posY, int width, int height)
     if (x0 >= x1 || y0 >= y1)
         return;
 
-    const colour outline = { 255, 255, 255 };
+    const c outline = { 255, 255, 255 };
     if (top >= y0 && top < y1) {
         for (int64_t x = x0; x < x1; ++x)
             put_pixel_2d((int)x, (int)top, outline);
@@ -435,7 +434,7 @@ int *interpolate(int i0, int d0, int i1, int d1)
     return values;
 }
 
-void draw_line(point p0, point p1, colour c)
+void draw_line(point p0, point p1, c color)
 {
     if (abs(p1.x - p0.x) > abs(p1.y - p0.y)) {
         if (p0.x > p1.x)
@@ -446,7 +445,7 @@ void draw_line(point p0, point p1, colour c)
             return;
 
         for (int x = p0.x; x <= p1.x; ++x)
-            put_pixel(x, ys[x - p0.x], c);
+            put_pixel(x, ys[x - p0.x], color);
 
         free(ys);
     } else {
@@ -458,20 +457,20 @@ void draw_line(point p0, point p1, colour c)
             return;
 
         for (int y = p0.y; y <= p1.y; ++y)
-            put_pixel(xs[y - p0.y], y, c);
+            put_pixel(xs[y - p0.y], y, color);
 
         free(xs);
     }
 }
 
-void draw_wire_triangle(point p0, point p1, point p2, colour c)
+void draw_wire_triangle(point p0, point p1, point p2, c color)
 {
-    draw_line(p0, p1, c);
-    draw_line(p1, p2, c);
-    draw_line(p2, p0, c);
+    draw_line(p0, p1, color);
+    draw_line(p1, p2, color);
+    draw_line(p2, p0, color);
 }
 
-void draw_filled_triangle(point p0, point p1, point p2, colour c)
+void draw_filled_triangle(point p0, point p1, point p2, c color)
 {
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y)
@@ -511,7 +510,7 @@ void draw_filled_triangle(point p0, point p1, point p2, colour c)
     // Draw the horizontal segments
     for (int y = p0.y; y <= p2.y; ++y) {
         for (int x = x_left[y - p0.y]; x <= x_right[y - p0.y]; ++x) {
-            put_pixel(x, y, c);
+            put_pixel(x, y, color);
         }
     }
 
@@ -656,7 +655,7 @@ static float projected_signed_area(point a, point b, point c)
     return (float)(b.x - a.x) * (c.y - a.y) - (float)(b.y - a.y) * (c.x - a.x);
 }
 
-static colour sample_texture(const texture *tex, float u, float v)
+static c sample_texture(const texture *tex, float u, float v)
 {
     if (u < 0.0f)
         u = 0.0f;
@@ -667,23 +666,23 @@ static colour sample_texture(const texture *tex, float u, float v)
     else if (v > 1.0f)
         v = 1.0f;
 
-    int x = (int)(u * (float)tex->width);
-    int y = (int)(v * (float)tex->height);
-    if (x == tex->width)
+    int x = (int)(u * (float)tex->w);
+    int y = (int)(v * (float)tex->h);
+    if (x == tex->w)
         --x;
-    if (y == tex->height)
+    if (y == tex->h)
         --y;
 
     const unsigned char *pixel =
-        tex->pixels + ((size_t)y * (size_t)tex->width + (size_t)x) * 3;
-    return (colour){ .r = pixel[0], .g = pixel[1], .b = pixel[2] };
+        tex->p + ((size_t)y * (size_t)tex->w + (size_t)x) * 3;
+    return (c){ .r = pixel[0], .g = pixel[1], .b = pixel[2] };
 }
 
 void draw2drectangle_texture(int posX, int posY, int width, int height,
                              const texture *tex)
 {
-    if (tex == NULL || tex->pixels == NULL || tex->width <= 0 ||
-        tex->height <= 0 || canvas.back_buffer == NULL || canvas.w <= 0 ||
+    if (tex == NULL || tex->p == NULL || tex->w <= 0 || tex->h <= 0 ||
+        canvas.back_buffer == NULL || canvas.w <= 0 ||
         canvas.h <= 0 || width <= 0 || height <= 0)
         return;
 
@@ -709,7 +708,7 @@ void draw2drectangle_texture(int posX, int posY, int width, int height,
 
 static void draw_rendered_triangle(point a, point b, point c, vertex va,
                                    vertex vb, vertex vc, float uv[3][2],
-                                   const texture *tex, colour flat_color)
+                                   const texture *tex, c flat_color)
 {
     float za = va.z - camera_position.z;
     float zb = vb.z - camera_position.z;
@@ -719,7 +718,7 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
         zc <= 0.0f)
         return;
     if (tex != NULL &&
-        (tex->pixels == NULL || tex->width <= 0 || tex->height <= 0))
+        (tex->p == NULL || tex->w <= 0 || tex->h <= 0))
         return;
 
     float area = projected_signed_area(a, b, c);
@@ -777,7 +776,7 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
             if (depth >= canvas.depth_buffer[depth_index])
                 continue;
 
-            colour pixel_color = flat_color;
+            c pixel_color = flat_color;
             if (tex != NULL) {
                 float u = (w0 * uv[0][0] / za + w1 * uv[1][0] / zb +
                            w2 * uv[2][0] / zc) /
