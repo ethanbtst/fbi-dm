@@ -172,7 +172,6 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
         switch (ch) {
         case '\n':
             cur_buff++;
-            info_curs[CUR_INPUT].row++;
             break;
 
         case '\b':

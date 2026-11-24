@@ -23,7 +23,7 @@ extern cursor info_curs[CUR_NUM_MAX];
 void set_cursors_info(int start_row, int start_col, int line_count_down);
 
 // Prints all info to the terminal
-void print_all_info(input_buffer *input_buffers);
+void print_all_info(input_buffer *input_buffers, size_t input_count);
 
 void file_info(char *filename, char *in_fmt, char *out_fmt);
 

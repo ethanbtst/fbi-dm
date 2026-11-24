@@ -89,7 +89,7 @@ static void *display_loop(void *input_buffers)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
         present();
-        print_all_info(input_buffers);
+        print_all_info(input_buffers, 2);
         clock_gettime(CLOCK_MONOTONIC, &stop);
         delay_frame(&start, &stop);
     }
