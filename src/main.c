@@ -85,6 +85,7 @@ static void delay_frame(const struct timespec *start,
 
 static void *display_loop(void *input_buffers)
 {
+    set_camera_position(large_img.width/2, small_img.height + (large_img.height/2), 0.0);
     pane.texture = &large_img;
     translate_object(&pane, -25, 25, 5);
     while (display_running) {
@@ -94,10 +95,10 @@ static void *display_loop(void *input_buffers)
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
-        draw2drectangle_texture(0, small_img.height, large_img.width,
-                                large_img.height, &large_img);
+        // draw2drectangle_texture(0, small_img.height, large_img.width,
+                                // large_img.height, &large_img);
         // rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
-        // render_object(&pane);
+        render_object(&pane);
         present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
