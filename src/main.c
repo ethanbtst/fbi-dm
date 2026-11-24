@@ -25,13 +25,52 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
-vertex pane_vertices[4];
+vertex pane_vertices[] = { {  5,  5, 20 },
+                           { -5,  5, 20 },
+                           { -5, -5, 20 },
+                           {  5, -5, 20 },
+                           {  5,  5, 20.0000001 },   
+                           { -5,  5, 20.0000001 },
+                           { -5, -5, 20.0000001 }, 
+                           {  5, -5, 20.0000001 } };
 
 triangle pane_triangles[] = {
     { .v = { 0, 1, 2 },
-      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } } },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
     { .v = { 0, 2, 3 },
-      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } } },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 0, 3 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 4, 3, 7 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 5, 4, 7 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 5, 7, 6 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 1, 5, 6 },
+      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 1, 6, 2 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
+      .color = { 255, 0, 0 } },
+    { .v = { 4, 5, 1 },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 4, 1, 0 },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 255, 0 } },
+    { .v = { 2, 6, 7 },
+      .uv = { { 0, 0 }, { 0, 1 }, { 1, 1 } },
+      .color = { 0, 0, 255 } },
+    { .v = { 2, 7, 3 },
+      .uv = { { 0, 0 }, { 1, 1 }, { 1, 0 } },
+      .color = { 0, 0, 255 } },
 };
 
 object pane = {
@@ -39,31 +78,15 @@ object pane = {
     .vertex_count = ARRAY_LEN(pane_vertices),
     .triangles = pane_triangles,
     .triangle_count = ARRAY_LEN(pane_triangles),
-    .texture = &large_img,
 };
-
-static void position_pane(void)
-{
-    if (large_img.width <= 0 || large_img.height <= 0)
-        return;
-
-    const float z = 5.0f;
-    float scale = fminf(0.7f * viewport_w / (float)large_img.width,
-                        0.7f * viewport_h / (float)large_img.height);
-    float half_width = (float)large_img.width * scale * z / 2.0f;
-    float half_height = (float)large_img.height * scale * z / 2.0f;
-
-    pane_vertices[0] = (vertex){ half_width, half_height, z };
-    pane_vertices[1] = (vertex){ -half_width, half_height, z };
-    pane_vertices[2] = (vertex){ -half_width, -half_height, z };
-    pane_vertices[3] = (vertex){ half_width, -half_height, z };
-}
 
 static void delay_frame(const struct timespec *start,
                         const struct timespec *stop);
 
 static void *display_loop(void *input_buffers)
 {
+    pane.texture = &large_img;
+    translate_object(&pane, -25, 25, 5);
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -71,8 +94,10 @@ static void *display_loop(void *input_buffers)
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
-        xy_rotate_object(&pane, (M_PI) / (FPS * 2));
-        render_object(&pane);
+        draw2drectangle_texture(0, small_img.height, large_img.width,
+                                large_img.height, &large_img);
+        // rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+        // render_object(&pane);
         present();
         print_all_info(input_buffers);
         clock_gettime(CLOCK_MONOTONIC, &stop);
@@ -134,8 +159,6 @@ int main()
         fprintf(stderr, "Failed to fit small image within configured limits\n");
     if (!resize_texture(&large_img, opt_big_max_w, opt_big_max_h))
         fprintf(stderr, "Failed to fit big image within configured limits\n");
-
-    position_pane();
 
     present();
 
