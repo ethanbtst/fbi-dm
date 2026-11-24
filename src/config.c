@@ -10,6 +10,10 @@
 
 char opt_small_pic[255];
 char opt_big_pic[255];
+int opt_small_max_h;
+int opt_small_max_w;
+int opt_big_max_h;
+int opt_big_max_w;
 bool opt_spin;
 float opt_rot_period;
 
@@ -25,8 +29,12 @@ void default_config()
 {
     strcpy(opt_small_pic, "/opt/fbi-dm/img/linux_logo.png");
     strcpy(opt_big_pic, "distro");
+    opt_small_max_h = 80;
+    opt_small_max_w = 80;
+    opt_big_max_h = 260;
+    opt_big_max_w = 260;
     opt_spin = false;
-    opt_rot_period = 2.0f;
+    opt_rot_period = 4.0f;
 
     strcpy(opt_top_text, "Welcome!");
     opt_hostname = true;
@@ -95,15 +103,21 @@ void get_config()
         if (strcmp(option, "big_pic") == 0)
             strcpy(opt_big_pic, value);
 
-        if (strcmp(option, "spin") == 0) {
+        if (strcmp(option, "small_max_h") == 0)
+            opt_small_max_h = atoi(value);
+
+        if (strcmp(option, "small_max_w") == 0)
+            opt_small_max_w = atoi(value);
+
+        if (strcmp(option, "big_max_h") == 0)
+            opt_big_max_h = atoi(value);
+
+        if (strcmp(option, "big_max_w") == 0)
+            opt_big_max_w = atoi(value);
+
+        if (strcmp(option, "spin") == 0)
             if (strcasecmp(value, "true") == 0)
                 opt_spin = true;
-            else if (strcasecmp(value, "false") == 0)
-                opt_spin = false;
-            else
-                fprintf(stderr, "Invalid spin value '%s'; expected true or false\n",
-                        value);
-        }
 
         if (strcmp(option, "rotation_period") == 0)
             set_rotation_period(value);
