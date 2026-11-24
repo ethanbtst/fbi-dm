@@ -71,8 +71,8 @@ static void set_rotation_period(const char *value)
     char *end;
     errno = 0;
     float period = strtof(value, &end);
-    if (errno == ERANGE || end == value || *end != '\0' ||
-        !isfinite(period) || period <= 0.0f) {
+    if (errno == ERANGE || end == value || *end != '\0' || !isfinite(period) ||
+        period <= 0.0f) {
         fprintf(stderr,
                 "Invalid rotation_period '%s'; expected positive seconds\n",
                 value);

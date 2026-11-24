@@ -33,7 +33,7 @@ typedef struct {
     uint8_t r;
     uint8_t g;
     uint8_t b;
-} c;
+} colour;
 
 typedef struct {
     int w;
@@ -44,7 +44,7 @@ typedef struct {
 typedef struct {
     int v[3];
     float uv[3][2];
-    c color;
+    colour c;
 } triangle;
 
 typedef struct {
@@ -86,7 +86,7 @@ void destroy_buffer(buffer *fb);
 
 void swap_points(point *p0, point *p1);
 
-void put_pixel(int x, int y, c color);
+void put_pixel(int x, int y, colour c);
 
 void draw2drectangle(int posX, int posY, int width, int height);
 
@@ -96,11 +96,11 @@ void present();
 
 int *interpolate(int i0, int d0, int i1, int d1);
 
-void draw_line(point p0, point p1, c color);
+void draw_line(point p0, point p1, colour c);
 
-void draw_wire_triangle(point p0, point p1, point p2, c color);
+void draw_wire_triangle(point p0, point p1, point p2, colour c);
 
-void draw_filled_triangle(point p0, point p1, point p2, c color);
+void draw_filled_triangle(point p0, point p1, point p2, colour c);
 
 point viewport_to_canvas(float x, float y);
 
@@ -334,7 +334,7 @@ void swap_points(point *p0, point *p1)
     *p0 = tmp;
 }
 
-void put_pixel(int x, int y, c color)
+void put_pixel(int x, int y, colour c)
 {
     int bytes_per_pixel = canvas.bpp / 8;
 
@@ -346,17 +346,17 @@ void put_pixel(int x, int y, c color)
     size_t location =
         (size_t)sy * canvas.line_length + (size_t)sx * bytes_per_pixel;
 
-    canvas.back_buffer[location] = (char)color.b;
-    canvas.back_buffer[location + 1] = (char)color.g;
-    canvas.back_buffer[location + 2] = (char)color.r;
+    canvas.back_buffer[location] = (char)c.b;
+    canvas.back_buffer[location + 1] = (char)c.g;
+    canvas.back_buffer[location + 2] = (char)c.r;
 
     if (bytes_per_pixel == 4)
         canvas.back_buffer[location + 3] = (char)255;
 }
 
-static void put_pixel_2d(int x, int y, c color)
+static void put_pixel_2d(int x, int y, colour c)
 {
-    put_pixel(x - canvas.w / 2, canvas.h / 2 - y, color);
+    put_pixel(x - canvas.w / 2, canvas.h / 2 - y, c);
 }
 
 void draw2drectangle(int posX, int posY, int width, int height)
@@ -376,7 +376,7 @@ void draw2drectangle(int posX, int posY, int width, int height)
     if (x0 >= x1 || y0 >= y1)
         return;
 
-    const c outline = { 255, 255, 255 };
+    const colour outline = { 255, 255, 255 };
     if (top >= y0 && top < y1) {
         for (int64_t x = x0; x < x1; ++x)
             put_pixel_2d((int)x, (int)top, outline);
@@ -434,7 +434,7 @@ int *interpolate(int i0, int d0, int i1, int d1)
     return values;
 }
 
-void draw_line(point p0, point p1, c color)
+void draw_line(point p0, point p1, colour c)
 {
     if (abs(p1.x - p0.x) > abs(p1.y - p0.y)) {
         if (p0.x > p1.x)
@@ -445,7 +445,7 @@ void draw_line(point p0, point p1, c color)
             return;
 
         for (int x = p0.x; x <= p1.x; ++x)
-            put_pixel(x, ys[x - p0.x], color);
+            put_pixel(x, ys[x - p0.x], c);
 
         free(ys);
     } else {
@@ -457,20 +457,20 @@ void draw_line(point p0, point p1, c color)
             return;
 
         for (int y = p0.y; y <= p1.y; ++y)
-            put_pixel(xs[y - p0.y], y, color);
+            put_pixel(xs[y - p0.y], y, c);
 
         free(xs);
     }
 }
 
-void draw_wire_triangle(point p0, point p1, point p2, c color)
+void draw_wire_triangle(point p0, point p1, point p2, colour c)
 {
-    draw_line(p0, p1, color);
-    draw_line(p1, p2, color);
-    draw_line(p2, p0, color);
+    draw_line(p0, p1, c);
+    draw_line(p1, p2, c);
+    draw_line(p2, p0, c);
 }
 
-void draw_filled_triangle(point p0, point p1, point p2, c color)
+void draw_filled_triangle(point p0, point p1, point p2, colour c)
 {
     // Sort the points so that y0 <= y1 <= y2
     if (p1.y < p0.y)
@@ -510,7 +510,7 @@ void draw_filled_triangle(point p0, point p1, point p2, c color)
     // Draw the horizontal segments
     for (int y = p0.y; y <= p2.y; ++y) {
         for (int x = x_left[y - p0.y]; x <= x_right[y - p0.y]; ++x) {
-            put_pixel(x, y, color);
+            put_pixel(x, y, c);
         }
     }
 
@@ -655,7 +655,7 @@ static float projected_signed_area(point a, point b, point c)
     return (float)(b.x - a.x) * (c.y - a.y) - (float)(b.y - a.y) * (c.x - a.x);
 }
 
-static c sample_texture(const texture *tex, float u, float v)
+static colour sample_texture(const texture *tex, float u, float v)
 {
     if (u < 0.0f)
         u = 0.0f;
@@ -675,7 +675,7 @@ static c sample_texture(const texture *tex, float u, float v)
 
     const unsigned char *pixel =
         tex->p + ((size_t)y * (size_t)tex->w + (size_t)x) * 3;
-    return (c){ .r = pixel[0], .g = pixel[1], .b = pixel[2] };
+    return (colour){ .r = pixel[0], .g = pixel[1], .b = pixel[2] };
 }
 
 void draw2drectangle_texture(int posX, int posY, int width, int height,
@@ -708,7 +708,7 @@ void draw2drectangle_texture(int posX, int posY, int width, int height,
 
 static void draw_rendered_triangle(point a, point b, point c, vertex va,
                                    vertex vb, vertex vc, float uv[3][2],
-                                   const texture *tex, c flat_color)
+                                   const texture *tex, colour flat_color)
 {
     float za = va.z - camera_position.z;
     float zb = vb.z - camera_position.z;
@@ -776,7 +776,7 @@ static void draw_rendered_triangle(point a, point b, point c, vertex va,
             if (depth >= canvas.depth_buffer[depth_index])
                 continue;
 
-            c pixel_color = flat_color;
+            colour pixel_color = flat_color;
             if (tex != NULL) {
                 float u = (w0 * uv[0][0] / za + w1 * uv[1][0] / zb +
                            w2 * uv[2][0] / zc) /
@@ -802,9 +802,9 @@ void render_triangle(triangle tri, const point *projected,
     if (tex != NULL) {
         draw_rendered_triangle(a, b, c, vertices[tri.v[0]],
                                vertices[tri.v[1]], vertices[tri.v[2]],
-                               tri.uv, tex, tri.color);
+                               tri.uv, tex, tri.c);
     } else {
-        draw_wire_triangle(a, b, c, tri.color);
+        draw_wire_triangle(a, b, c, tri.c);
     }
 }
 
