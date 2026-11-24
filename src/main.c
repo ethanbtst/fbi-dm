@@ -25,52 +25,13 @@ buffer *buf;
 texture small_img = { 0 };
 texture large_img = { 0 };
 
-vertex pane_vertices[] = { {  5,  5, 20 },
-                           { -5,  5, 20 },
-                           { -5, -5, 20 },
-                           {  5, -5, 20 },
-                           {  5,  5, 20.0000001 },   
-                           { -5,  5, 20.0000001 },
-                           { -5, -5, 20.0000001 }, 
-                           {  5, -5, 20.0000001 } };
+vertex pane_vertices[4];
 
 triangle pane_triangles[] = {
     { .v = { 0, 1, 2 },
-      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
-      .color = { 255, 0, 0 } },
+      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } } },
     { .v = { 0, 2, 3 },
-      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
-      .color = { 255, 0, 0 } },
-    { .v = { 4, 0, 3 },
-      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
-      .color = { 0, 0, 255 } },
-    { .v = { 4, 3, 7 },
-      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
-      .color = { 0, 0, 255 } },
-    { .v = { 5, 4, 7 },
-      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
-      .color = { 0, 255, 0 } },
-    { .v = { 5, 7, 6 },
-      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
-      .color = { 0, 255, 0 } },
-    { .v = { 1, 5, 6 },
-      .uv = { { 0, 0 }, { 1, 0 }, { 1, 1 } },
-      .color = { 255, 0, 0 } },
-    { .v = { 1, 6, 2 },
-      .uv = { { 0, 0 }, { 1, 1 }, { 0, 1 } },
-      .color = { 255, 0, 0 } },
-    { .v = { 4, 5, 1 },
-      .uv = { { 1, 0 }, { 0, 0 }, { 0, 1 } },
-      .color = { 0, 255, 0 } },
-    { .v = { 4, 1, 0 },
-      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } },
-      .color = { 0, 255, 0 } },
-    { .v = { 2, 6, 7 },
-      .uv = { { 0, 0 }, { 0, 1 }, { 1, 1 } },
-      .color = { 0, 0, 255 } },
-    { .v = { 2, 7, 3 },
-      .uv = { { 0, 0 }, { 1, 1 }, { 1, 0 } },
-      .color = { 0, 0, 255 } },
+      .uv = { { 1, 0 }, { 0, 1 }, { 1, 1 } } },
 };
 
 object pane = {
@@ -80,14 +41,22 @@ object pane = {
     .triangle_count = ARRAY_LEN(pane_triangles),
 };
 
+static vertex screen_to_world(float x, float y, float z)
+{
+    return (vertex){
+        .x = (x - (float)canvas.w / 2.0f) * viewport_w * z /
+             ((float)canvas.w * projection_distance),
+        .y = ((float)canvas.h / 2.0f - y) * viewport_h * z /
+             ((float)canvas.h * projection_distance),
+        .z = z,
+    };
+}
+
 static void delay_frame(const struct timespec *start,
                         const struct timespec *stop);
 
 static void *display_loop(void *input_buffers)
 {
-    set_camera_position(large_img.width/2, small_img.height + (large_img.height/2), 0.0);
-    pane.texture = &large_img;
-    translate_object(&pane, -25, 25, 5);
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -95,9 +64,6 @@ static void *display_loop(void *input_buffers)
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);
-        // draw2drectangle_texture(0, small_img.height, large_img.width,
-                                // large_img.height, &large_img);
-        // rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
         render_object(&pane);
         present();
         print_all_info(input_buffers);
@@ -160,6 +126,20 @@ int main()
         fprintf(stderr, "Failed to fit small image within configured limits\n");
     if (!resize_texture(&large_img, opt_big_max_w, opt_big_max_h))
         fprintf(stderr, "Failed to fit big image within configured limits\n");
+
+    set_camera_position(0.0f, 0.0f, 0.0f);
+    pane.texture = &large_img;
+    if (large_img.width > 0 && large_img.height > 0) {
+        const float pane_z = 5.0f;
+        float right = (float)(large_img.width - 1);
+        float bottom = (float)(small_img.height + large_img.height - 1);
+        pane_vertices[0] =
+            screen_to_world(right, (float)small_img.height, pane_z);
+        pane_vertices[1] =
+            screen_to_world(0.0f, (float)small_img.height, pane_z);
+        pane_vertices[2] = screen_to_world(0.0f, bottom, pane_z);
+        pane_vertices[3] = screen_to_world(right, bottom, pane_z);
+    }
 
     present();
 
