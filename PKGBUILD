@@ -1,68 +1,38 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
-
-# Guidelines specific to Bazaar, Git, Mercurial and Subversion packages.
-# Other VCS sources are not natively supported by makepkg yet.
-
-# Maintainer: Your Name <youremail@domain.com>
+# Maintainer: Ethan
 pkgname=fbi-dm-git
-pkgver=VERSION
+pkgver=r0
 pkgrel=1
-pkgdesc=""
-arch=()
-url=""
+pkgdesc="Framebuffer-based login display manager"
+arch=('x86_64')
+url="https://git.ethanbtst.ca/fb-dm"
 license=('unknown')
-groups=()
-depends=()
-makedepends=('git') # 'bzr', 'git', 'mercurial' or 'subversion'
-provides=("${pkgname%-VCS}")
-conflicts=("${pkgname%-VCS}")
-replaces=()
-backup=()
-options=()
-install=
-source=('FOLDER::VCS+URL#FRAGMENT')
-noextract=()
+depends=('pam' 'systemd')
+makedepends=('gcc' 'git' 'make')
+provides=("${pkgname%-git}")
+conflicts=("${pkgname%-git}")
+backup=('opt/fbi-dm/config.ini')
+source=("${pkgname%-git}::git+https://git.ethanbtst.ca/fb-dm")
 sha256sums=('SKIP')
 
-# Please refer to the 'USING VCS SOURCES' section of the PKGBUILD man page for
-# a description of each element in the source array.
-
 pkgver() {
-	cd "$srcdir/${pkgname%-VCS}"
-
-# The examples below are not absolute and need to be adapted to each repo. The
-# primary goal is to generate version numbers that will increase according to
-# pacman's version comparisons with later commits to the repo. The format
-# VERSION='VER_NUM.rREV_NUM.HASH', or a relevant subset in case VER_NUM or HASH
-# are not available, is recommended.
-
-# Git, tags available
-	printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
-
-# Git, no tags available
-	printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-
-prepare() {
-	cd "$srcdir/${pkgname%-VCS}"
-	patch -p1 -i "$srcdir/${pkgname%-VCS}.patch"
+	cd "$srcdir/${pkgname%-git}"
+	printf 'r%s.%s\n' "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
 }
 
 build() {
-	cd "$srcdir/${pkgname%-VCS}"
-	./autogen.sh
-	./configure --prefix=/usr
-	make
-}
-
-check() {
-	cd "$srcdir/${pkgname%-VCS}"
-	make -k check
+	cd "$srcdir/${pkgname%-git}"
+	make CC="${CC:-gcc}" \
+		CFLAGS="${CFLAGS} -Wall -Wextra -Iinclude -pthread" \
+		LDFLAGS="${LDFLAGS} -pthread"
 }
 
 package() {
-	cd "$srcdir/${pkgname%-VCS}"
-	make DESTDIR="$pkgdir/" install
+	cd "$srcdir/${pkgname%-git}"
+
+	install -Dm755 fbi-dm "$pkgdir/opt/fbi-dm/fbi-dm"
+	install -Dm644 config.ini "$pkgdir/opt/fbi-dm/config.ini"
+	install -Dm644 fbi-dm@.service \
+		"$pkgdir/usr/lib/systemd/system/fbi-dm@.service"
+	install -dm755 "$pkgdir/opt/fbi-dm/img"
+	cp -a img/. "$pkgdir/opt/fbi-dm/img/"
 }
