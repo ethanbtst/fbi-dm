@@ -113,6 +113,8 @@ void render_triangle(triangle tri, const point *projected,
 
 void render_object(object *obj);
 
+void translate_object(object *obj, float x, float y, float z);
+
 void xz_rotate_object(object *obj, float angle);
 
 void xy_rotate_object(object *obj, float angle);
@@ -741,6 +743,18 @@ static vertex get_object_center(const object *obj)
     center.y /= (float)obj->vertex_count;
     center.z /= (float)obj->vertex_count;
     return center;
+}
+
+void translate_object(object *obj, float x, float y, float z)
+{
+    if (obj == NULL || obj->vertices == NULL)
+        return;
+
+    for (size_t i = 0; i < obj->vertex_count; ++i) {
+        obj->vertices[i].x += x;
+        obj->vertices[i].y += y;
+        obj->vertices[i].z += z;
+    }
 }
 
 void xz_rotate_object(object *obj, float angle)
