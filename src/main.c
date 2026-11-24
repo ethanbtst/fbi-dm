@@ -159,27 +159,8 @@ int main()
     }
 
     struct winsize w;
-    if (ioctl(STDERR_FILENO, TIOCGWINSZ, &w) == -1) {
-        perror("Failed to get terminal size");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                &canvas);
-        return 1;
-    }
-    if (w.ws_row == 0 || w.ws_col == 0) {
-        fprintf(stderr, "Invalid terminal size\n");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                &canvas);
-        return 1;
-    }
-
     int font_height = canvas.h / w.ws_row;
     int font_width = canvas.w / w.ws_col;
-    if (font_height <= 0 || font_width <= 0) {
-        fprintf(stderr, "Terminal font dimensions are invalid\n");
-        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
-                &canvas);
-        return 1;
-    }
 
     float image_aspect = (float)large_img.width / (float)large_img.height;
     for (size_t i = 0; i < ARRAY_LEN(pane_vertices); ++i)
@@ -187,8 +168,7 @@ int main()
 
     int info_rows = info_rows_before_controls();
     float minimum_image_height = (float)info_rows * (float)font_height;
-    float image_area_height =
-        fmaxf((float)large_img.height, minimum_image_height);
+    float image_area_height = fmaxf((float)large_img.height, minimum_image_height);
     float pane_height = image_area_height;
     float pane_width = pane_height * image_aspect;
     if (pane_width > (float)canvas.w) {
