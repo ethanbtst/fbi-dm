@@ -84,7 +84,7 @@ static void *display_loop(void *input_buffers)
         clear();
 		rotate_object_relative_to_camera(&pane, 0.0f,
 		                                 (M_PI) / (FPS * 2), 0.0f);
-        render_object(&pane);
+        render_wire_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
                                     small_img.height, &small_img);

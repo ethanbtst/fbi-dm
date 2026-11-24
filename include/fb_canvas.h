@@ -120,6 +120,8 @@ void render_triangle(triangle tri, const point *projected,
 
 void render_object(object *obj);
 
+void render_wire_object(object *obj);
+
 void translate_object(object *obj, float x, float y, float z);
 
 void xz_rotate_object(object *obj, float angle);
@@ -676,25 +678,37 @@ void render_triangle(triangle tri, const point *projected,
     point b = projected[tri.v[1]];
     point c = projected[tri.v[2]];
 
-	
-    draw_rendered_triangle(a, b, c, vertices[tri.v[0]], vertices[tri.v[1]],
-                           vertices[tri.v[2]], tri.uv, tex, tri.color);
+    if (tex != NULL) {
+        draw_rendered_triangle(a, b, c, vertices[tri.v[0]],
+                               vertices[tri.v[1]], vertices[tri.v[2]],
+                               tri.uv, tex, tri.color);
+    } else {
+        draw_wire_triangle(a, b, c, tri.color);
+    }
 }
 
-void render_object(object *obj)
+static bool project_object_vertices(object *obj)
 {
     if (obj == NULL || obj->vertices == NULL || obj->triangles == NULL ||
         obj->vertex_count == 0)
-        return;
+        return false;
 
     if (obj->projected == NULL) {
         obj->projected = malloc(obj->vertex_count * sizeof(*obj->projected));
         if (obj->projected == NULL)
-            return;
+            return false;
     }
 
     for (size_t i = 0; i < obj->vertex_count; ++i)
         obj->projected[i] = project_vertex(obj->vertices[i]);
+
+    return true;
+}
+
+void render_object(object *obj)
+{
+    if (!project_object_vertices(obj))
+        return;
 
     for (size_t i = 0; i < obj->triangle_count; ++i) {
         triangle tri = obj->triangles[i];
@@ -714,6 +728,26 @@ void render_object(object *obj)
             continue;
 
         render_triangle(tri, obj->projected, obj->vertices, obj->texture);
+    }
+}
+
+void render_wire_object(object *obj)
+{
+    if (!project_object_vertices(obj))
+        return;
+
+    for (size_t i = 0; i < obj->triangle_count; ++i) {
+        triangle tri = obj->triangles[i];
+        if (tri.v[0] < 0 || (size_t)tri.v[0] >= obj->vertex_count ||
+            tri.v[1] < 0 || (size_t)tri.v[1] >= obj->vertex_count ||
+            tri.v[2] < 0 || (size_t)tri.v[2] >= obj->vertex_count)
+            continue;
+        if (obj->vertices[tri.v[0]].z <= camera_position.z ||
+            obj->vertices[tri.v[1]].z <= camera_position.z ||
+            obj->vertices[tri.v[2]].z <= camera_position.z)
+            continue;
+
+        render_triangle(tri, obj->projected, obj->vertices, NULL);
     }
 }
 
