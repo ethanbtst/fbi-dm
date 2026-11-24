@@ -58,6 +58,22 @@ void set_distro_logo()
     fclose(fd);
 }
 
+static void set_rotation_period(const char *value)
+{
+    char *end;
+    errno = 0;
+    float period = strtof(value, &end);
+    if (errno == ERANGE || end == value || *end != '\0' ||
+        !isfinite(period) || period <= 0.0f) {
+        fprintf(stderr,
+                "Invalid rotation_period '%s'; expected positive seconds\n",
+                value);
+        return;
+    }
+
+    opt_rot_period = period;
+}
+
 void get_config()
 {
     FILE *fd = fopen("/opt/fbi-dm/config.ini", "r");
@@ -82,20 +98,15 @@ void get_config()
         if (strcmp(option, "spin") == 0) {
             if (strcasecmp(value, "true") == 0)
                 opt_spin = true;
-
-        if (strcmp(option, "rotation_period") == 0) {
-            char *end;
-            errno = 0;
-            float period = strtof(value, &end);
-            if (errno == ERANGE || end == value || *end != '\0' ||
-                !isfinite(period) || period <= 0.0f) {
-                fprintf(stderr,
-                        "Invalid rotation_period '%s'; expected positive seconds\n",
+            else if (strcasecmp(value, "false") == 0)
+                opt_spin = false;
+            else
+                fprintf(stderr, "Invalid spin value '%s'; expected true or false\n",
                         value);
-            } else {
-                opt_rot_period = period;
-            }
         }
+
+        if (strcmp(option, "rotation_period") == 0)
+            set_rotation_period(value);
 
         if (strcmp(option, "top_text") == 0)
             strcpy(opt_top_text, value);
