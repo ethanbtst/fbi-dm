@@ -42,5 +42,5 @@ install:
 	mkdir -p /opt/fbi-dm
 	cp -f fbi-dm /opt/fbi-dm
 	cp -rf img /opt/fbi-dm
-	cp config.ini /opt/fbi-dm
-	cp -f fbi-dm@.service /usr/lib/systemd/system
+	cp res/config.ini /opt/fbi-dm
+	cp -f res/fbi-dm@.service /usr/lib/systemd/system
