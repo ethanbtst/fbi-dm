@@ -40,10 +40,8 @@ Default config:
 ```
 small_pic 		= path to image
 big_pic   		= distro or path to image
-opt_small_max_h = int for max pixels
-opt_small_max_w = int for max pixels
-opt_big_max_h 	= int for max pixels
-opt_big_max_w 	= int for max pixels
+spin            = bool
+rotation_period = seconds per full rotation
 
 top_text  		= string
 hostname  		= bool

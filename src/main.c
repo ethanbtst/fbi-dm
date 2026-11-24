@@ -83,11 +83,23 @@ static void delay_frame(const struct timespec *start,
 static void *display_loop(void *input_buffers)
 {
     pane.texture = &large_img;
+    struct timespec previous_frame = { 0 };
+    bool has_previous_frame = false;
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
         clear();
-        rotate_object(&pane, 0.0f, (M_PI) / (FPS * 2), 0.0f);
+        if (opt_spin && has_previous_frame && opt_rot_period > 0.0f) {
+            double elapsed = (double)(start.tv_sec - previous_frame.tv_sec) +
+                             (double)(start.tv_nsec - previous_frame.tv_nsec) /
+                                 1000000000.0;
+            double angle =
+                fmod(2.0 * M_PI * elapsed / (double)opt_rot_period,
+                     2.0 * M_PI);
+            rotate_object(&pane, 0.0f, (float)angle, 0.0f);
+        }
+        previous_frame = start;
+        has_previous_frame = true;
         render_object(&pane);
         for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
             draw2drectangle_texture(4 + i * small_img.width, 0, small_img.width,
