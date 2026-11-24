@@ -158,9 +158,28 @@ int main()
         return 1;
     }
 
-    struct winsize w;
+    struct winsize w = { 0 };
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &w) == -1) {
+        perror("Failed to get terminal dimensions");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+    if (w.ws_row == 0 || w.ws_col == 0) {
+        fprintf(stderr, "Terminal reported invalid dimensions\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
+
     int font_height = canvas.h / w.ws_row;
     int font_width = canvas.w / w.ws_col;
+    if (font_height == 0 || font_width == 0) {
+        fprintf(stderr, "Framebuffer is too small for the terminal dimensions\n");
+        cleanup((texture *[]){ &small_img, &large_img }, 2, &saved_term,
+                &canvas);
+        return 1;
+    }
 
     float image_aspect = (float)large_img.w / (float)large_img.h;
     for (size_t i = 0; i < ARRAY_LEN(pane_vertices); ++i)
