@@ -8,10 +8,8 @@
 
 char opt_small_pic[255];
 char opt_big_pic[255];
-int opt_small_max_h;
-int opt_small_max_w;
-int opt_big_max_h;
-int opt_big_max_w;
+bool opt_spin;
+float opt_rot_period;
 
 bool opt_hostname;
 bool opt_kernel;
