@@ -30,8 +30,8 @@ package() {
 	cd "$srcdir/${pkgname%-git}"
 
 	install -Dm755 fbi-dm "$pkgdir/opt/fbi-dm/fbi-dm"
-	install -Dm644 src/config.ini "$pkgdir/opt/fbi-dm/config.ini"
-	install -Dm644 src/fbi-dm@.service \
+	install -Dm644 res/config.ini "$pkgdir/opt/fbi-dm/config.ini"
+	install -Dm644 res/fbi-dm@.service \
 		"$pkgdir/usr/lib/systemd/system/fbi-dm@.service"
 	install -dm755 "$pkgdir/opt/fbi-dm/img"
 	cp -a img/. "$pkgdir/opt/fbi-dm/img/"
