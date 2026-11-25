@@ -36,11 +36,13 @@ clean:
 	rm -f $(TARGET)
 
 uninstall:
-	rm -rf /opt/fbi-dm
+	rm -f /usr/bin/fbi-dm
+	rm -rf /etc/fbi-dm
+	rm -f /usr/lib/systemd/system/fbi-dm@.service
 
 install:
-	mkdir -p /opt/fbi-dm
-	cp -f fbi-dm /opt/fbi-dm
-	cp -rf img /opt/fbi-dm
-	cp res/config.ini /opt/fbi-dm
-	cp -f res/fbi-dm@.service /usr/lib/systemd/system
+	install -Dm755 fbi-dm /usr/bin/fbi-dm
+	install -Dm644 res/config.ini /etc/fbi-dm/config.ini
+	install -Dm644 res/fbi-dm@.service /usr/lib/systemd/system/fbi-dm@.service
+	install -dm755 /etc/fbi-dm/img
+	cp -rf img/. /etc/fbi-dm/img/

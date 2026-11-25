@@ -27,7 +27,7 @@ bool opt_brightness;
 
 void default_config()
 {
-    strcpy(opt_small_pic, "/opt/fbi-dm/img/linux_logo.png");
+    strcpy(opt_small_pic, "/etc/fbi-dm/img/linux_logo.png");
     strcpy(opt_big_pic, "distro");
     opt_small_max_h = 80;
     opt_small_max_w = 80;
@@ -61,7 +61,7 @@ void set_distro_logo()
 
         if (strcasecmp(option, "id") == 0)
             snprintf(opt_big_pic, sizeof(opt_big_pic),
-                     "/opt/fbi-dm/img/distro_logos/%s.png", value);
+                     "/etc/fbi-dm/img/distro_logos/%s.png", value);
     }
     fclose(fd);
 }
@@ -84,7 +84,7 @@ static void set_rotation_period(const char *value)
 
 void get_config()
 {
-    FILE *fd = fopen("/opt/fbi-dm/config.ini", "r");
+    FILE *fd = fopen("/etc/fbi-dm/config.ini", "r");
 
     if (!fd)
         return;

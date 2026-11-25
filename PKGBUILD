@@ -10,7 +10,7 @@ depends=('pam' 'systemd')
 makedepends=('gcc' 'git' 'make')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
-backup=('opt/fbi-dm/config.ini')
+backup=('etc/fbi-dm/config.ini')
 source=("${pkgname%-git}::git+https://git.ethanbtst.ca/fbi-dm")
 sha256sums=('SKIP')
 
@@ -29,10 +29,10 @@ build() {
 package() {
 	cd "$srcdir/${pkgname%-git}"
 
-	install -Dm755 fbi-dm "$pkgdir/opt/fbi-dm/fbi-dm"
-	install -Dm644 res/config.ini "$pkgdir/opt/fbi-dm/config.ini"
+	install -Dm755 fbi-dm "$pkgdir/usr/bin/fbi-dm"
+	install -Dm644 res/config.ini "$pkgdir/etc/fbi-dm/config.ini"
 	install -Dm644 res/fbi-dm@.service \
 		"$pkgdir/usr/lib/systemd/system/fbi-dm@.service"
-	install -dm755 "$pkgdir/opt/fbi-dm/img"
-	cp -a img/. "$pkgdir/opt/fbi-dm/img/"
+	install -dm755 "$pkgdir/etc/fbi-dm/img"
+	cp -a img/. "$pkgdir/etc/fbi-dm/img/"
 }

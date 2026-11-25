@@ -42,7 +42,7 @@ makepkg -si
 ```
 
 ## Customization
-To customize edit `/opt/fbi-dm/config.ini`
+To customize edit `/etc/fbi-dm/config.ini`
 
 By default the images shown are the penguins found when booting the
 system (if enabled when building the kernel). The big image will be
