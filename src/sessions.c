@@ -255,7 +255,7 @@ int get_session_index(int session_count)
 
 void set_session_index(int session_cur)
 {
-    FILE *fd = fopen("/opt/fb-dm/index.txt", "w");
+    FILE *fd = fopen("/opt/fbi-dm/index.txt", "w");
     if (!fd)
         return;
 
