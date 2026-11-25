@@ -107,6 +107,7 @@ void update_session(int change)
     if (session_cur < 0)
         session_cur += session_total;
     session_info(sessions, session_cur, session_count);
+    fflush(stdout);
 }
 
 int readkey(void)
@@ -168,26 +169,32 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
 {
     while (cur_buff < input_count) {
         int ch = readkey();
+        bool input_changed = false;
 
         switch (ch) {
         case '\n':
             cur_buff++;
+            input_changed = true;
             break;
 
         case '\b':
         case KEY_BACKSPACE:
             char *buff = input_buffers[cur_buff].buffer;
             size_t len = strnlen(buff, sizeof(input_buffers[cur_buff].buffer));
-            if (len > 0)
+            if (len > 0) {
                 buff[len - 1] = '\0';
+                input_changed = true;
+            }
             break;
 
         case KEY_LEFT:
             update_session(1);
+            restore_input_cursor(input_buffers, input_count);
             break;
 
         case KEY_RIGHT:
             update_session(-1);
+            restore_input_cursor(input_buffers, input_count);
             break;
 
         case KEY_F1:
@@ -216,10 +223,14 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
                 if (len + 1 < sizeof(input_buffers[cur_buff].buffer)) {
                     buff[len] = (char)ch;
                     buff[len + 1] = '\0';
+                    input_changed = true;
                 }
             }
             break;
         }
+
+        if (input_changed)
+            print_input_info(input_buffers, input_count);
     }
     printf("\n");
 }

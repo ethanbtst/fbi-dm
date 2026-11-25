@@ -17,12 +17,16 @@
 #define CANVAS_IMPLEMENTATION
 #include "fb_canvas.h"
 
-#define FPS 24
+#define FPS 50
 
 pthread_t keyThread, displayThread;
 static volatile sig_atomic_t display_running;
 texture small_img = { 0 };
 texture large_img = { 0 };
+static int pane_region_x;
+static int pane_region_y;
+static int pane_region_width;
+static int pane_region_height;
 
 vertex pane_vertices[8] = {
     { 1.0f, -1.0f, 0.0f },      { -1.0f, -1.0f, 0.0f },
@@ -82,22 +86,46 @@ static void delay_frame(const struct timespec *start,
 
 static void *display_loop(void *input_buffers)
 {
+    input_buffer *buffers = input_buffers;
     pane.texture = &large_img;
     float d_angle = (2.0 * M_PI) / (opt_rot_period * FPS);
+    bool first_frame = true;
+    time_t last_info_update = 0;
+
     while (display_running) {
         struct timespec start, stop;
         clock_gettime(CLOCK_MONOTONIC, &start);
-        clear();
 
-        if (opt_spin)
+        if (first_frame) {
+            clear();
+            for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
+                draw2drectangle_texture(4 + i * small_img.w, 0, small_img.w,
+                                        small_img.h, &small_img);
+            present();
+
+            if (opt_spin)
+                rotate_object(&pane, 0.0f, d_angle, 0.0f);
+            render_object(&pane);
+            present_region(pane_region_x, pane_region_y, pane_region_width,
+                           pane_region_height);
+            print_all_info(buffers, 2);
+            last_info_update = time(NULL);
+            first_frame = false;
+        } else if (opt_spin) {
+            clear_region(pane_region_x, pane_region_y, pane_region_width,
+                         pane_region_height);
             rotate_object(&pane, 0.0f, d_angle, 0.0f);
+            render_object(&pane);
+            present_region(pane_region_x, pane_region_y, pane_region_width,
+                           pane_region_height);
+        }
 
-        render_object(&pane);
-        for (int i = 0; i < sysconf(_SC_NPROCESSORS_ONLN); ++i)
-            draw2drectangle_texture(4 + i * small_img.w, 0, small_img.w,
-                                    small_img.h, &small_img);
-        present();
-        print_all_info(input_buffers, 2);
+        time_t now = time(NULL);
+        if (now != (time_t)-1 && now != last_info_update) {
+            update_dynamic_info(buffers, 2);
+            last_info_update = now;
+        }
+
         clock_gettime(CLOCK_MONOTONIC, &stop);
         delay_frame(&start, &stop);
     }
@@ -205,6 +233,10 @@ int main()
                 &canvas);
         return 1;
     }
+    pane_region_x = 0;
+    pane_region_y = (int)floorf(pane_top);
+    pane_region_width = (int)ceilf(pane_width);
+    pane_region_height = (int)ceilf(img_height);
 
     int info_start_row = (small_img.h / font_height) + 2;
     int controls_row = (int)((pane_top + img_height) / font_height) + 2;

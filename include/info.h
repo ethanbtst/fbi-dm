@@ -17,7 +17,22 @@ enum {
     CUR_NUM_MAX
 };
 
+enum {
+    DYNAMIC_DATE,
+    DYNAMIC_TIME,
+    DYNAMIC_BATTERY,
+    DYNAMIC_INFO_COUNT
+};
+
 extern cursor info_curs[CUR_NUM_MAX];
+
+
+
+
+static bool update_dynamic_line(int cache_index, int cursor_index,
+                                const char *line);
+
+static bool read_battery_info(char *line, size_t line_size);
 
 // Stores where information is placed into `cursor info_curs[]`
 void set_cursors_info(int start_row, int start_col, int line_count_down);
@@ -26,6 +41,13 @@ int info_rows_before_controls(void);
 
 // Prints all info to the terminal
 void print_all_info(input_buffer *input_buffers, size_t input_count);
+
+// Refreshes date, time, and battery rows only when their displayed text changes
+void update_dynamic_info(input_buffer *input_buffers, size_t input_count);
+
+void print_input_info(input_buffer *input_buffers, size_t input_count);
+
+void restore_input_cursor(input_buffer *input_buffers, size_t input_count);
 
 void file_info(char *filename, char *in_fmt, char *out_fmt);
 

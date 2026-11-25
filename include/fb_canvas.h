@@ -96,6 +96,10 @@ void clear();
 
 void present();
 
+void clear_region(int x, int y, int width, int height);
+
+void present_region(int x, int y, int width, int height);
+
 int *interpolate(int i0, int d0, int i1, int d1);
 
 void draw_line(point p0, point p1, colour c);
@@ -405,10 +409,78 @@ void clear()
     }
 }
 
+static bool clip_canvas_region(int x, int y, int width, int height, int *x0,
+                               int *y0, int *x1, int *y1)
+{
+    if (canvas.w <= 0 || canvas.h <= 0 || width <= 0 || height <= 0)
+        return false;
+
+    int64_t left = x;
+    int64_t top = y;
+    int64_t right = left + width;
+    int64_t bottom = top + height;
+    int64_t clipped_left = left > 0 ? left : 0;
+    int64_t clipped_top = top > 0 ? top : 0;
+    int64_t clipped_right = right < canvas.w ? right : canvas.w;
+    int64_t clipped_bottom = bottom < canvas.h ? bottom : canvas.h;
+    if (clipped_left >= clipped_right || clipped_top >= clipped_bottom)
+        return false;
+
+    *x0 = (int)clipped_left;
+    *y0 = (int)clipped_top;
+    *x1 = (int)clipped_right;
+    *y1 = (int)clipped_bottom;
+    return true;
+}
+
+void clear_region(int x, int y, int width, int height)
+{
+    if (canvas.back_buffer == NULL || canvas.bpp <= 0 || canvas.bpp % 8 != 0)
+        return;
+
+    int x0, y0, x1, y1;
+    if (!clip_canvas_region(x, y, width, height, &x0, &y0, &x1, &y1))
+        return;
+
+    size_t bytes_per_pixel = (size_t)(canvas.bpp / 8);
+    size_t row_bytes = (size_t)(x1 - x0) * bytes_per_pixel;
+    for (int row = y0; row < y1; ++row) {
+        size_t offset = (size_t)row * (size_t)canvas.line_length +
+                        (size_t)x0 * bytes_per_pixel;
+        memset(canvas.back_buffer + offset, 0, row_bytes);
+
+        if (canvas.depth_buffer != NULL) {
+            size_t depth_offset = (size_t)row * (size_t)canvas.w + (size_t)x0;
+            for (int col = x0; col < x1; ++col)
+                canvas.depth_buffer[depth_offset + (size_t)(col - x0)] =
+                    INFINITY;
+        }
+    }
+}
+
 void present()
 {
     if (canvas.fbp != NULL && canvas.back_buffer != NULL)
         memcpy(canvas.fbp, canvas.back_buffer, (size_t)canvas.screensize);
+}
+
+void present_region(int x, int y, int width, int height)
+{
+    if (canvas.fbp == NULL || canvas.back_buffer == NULL || canvas.bpp <= 0 ||
+        canvas.bpp % 8 != 0)
+        return;
+
+    int x0, y0, x1, y1;
+    if (!clip_canvas_region(x, y, width, height, &x0, &y0, &x1, &y1))
+        return;
+
+    size_t bytes_per_pixel = (size_t)(canvas.bpp / 8);
+    size_t row_bytes = (size_t)(x1 - x0) * bytes_per_pixel;
+    for (int row = y0; row < y1; ++row) {
+        size_t offset = (size_t)row * (size_t)canvas.line_length +
+                        (size_t)x0 * bytes_per_pixel;
+        memcpy(canvas.fbp + offset, canvas.back_buffer + offset, row_bytes);
+    }
 }
 
 int *interpolate(int i0, int d0, int i1, int d1)
