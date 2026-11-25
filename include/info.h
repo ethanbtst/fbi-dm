@@ -27,6 +27,11 @@ int info_rows_before_controls(void);
 // Prints all info to the terminal
 void print_all_info(input_buffer *input_buffers, size_t input_count);
 
+// Refreshes date, time, and battery rows only when their displayed text changes
+void update_dynamic_info(void);
+
+void print_input_info(input_buffer *input_buffers, size_t input_count);
+
 void file_info(char *filename, char *in_fmt, char *out_fmt);
 
 void time_info(char *name, char *fmt);
