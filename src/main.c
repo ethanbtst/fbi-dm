@@ -86,6 +86,7 @@ static void delay_frame(const struct timespec *start,
 
 static void *display_loop(void *input_buffers)
 {
+    input_buffer *buffers = input_buffers;
     pane.texture = &large_img;
     float d_angle = (2.0 * M_PI) / (opt_rot_period * FPS);
     bool first_frame = true;
@@ -107,7 +108,7 @@ static void *display_loop(void *input_buffers)
             render_object(&pane);
             present_region(pane_region_x, pane_region_y, pane_region_width,
                            pane_region_height);
-            print_all_info(input_buffers, 2);
+            print_all_info(buffers, 2);
             last_info_update = time(NULL);
             first_frame = false;
         } else if (opt_spin) {
@@ -121,7 +122,7 @@ static void *display_loop(void *input_buffers)
 
         time_t now = time(NULL);
         if (now != (time_t)-1 && now != last_info_update) {
-            update_dynamic_info();
+            update_dynamic_info(buffers, 2);
             last_info_update = now;
         }
 

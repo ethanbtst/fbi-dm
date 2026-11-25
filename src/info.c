@@ -93,7 +93,7 @@ void print_all_info(input_buffer *input_buffers, size_t input_count)
         file_info("/etc/hostname", "%254s", "[%s]");
     if (move(info_curs[CUR_KERNEL].row, info_curs[CUR_KERNEL].col))
         file_info("/proc/version", "%*s %*s %254s", "Kernel: %s");
-    update_dynamic_info();
+    update_dynamic_info(input_buffers, input_count);
 
     move(info_curs[CUR_SESSION].row, info_curs[CUR_SESSION].col);
     session_info(sessions, session_cur, session_count);
@@ -111,7 +111,7 @@ void print_all_info(input_buffer *input_buffers, size_t input_count)
     fflush(stdout);
 }
 
-void update_dynamic_info(void)
+void update_dynamic_info(input_buffer *input_buffers, size_t input_count)
 {
     bool changed = false;
     time_t now = time(NULL);
@@ -143,7 +143,7 @@ void update_dynamic_info(void)
     }
 
     if (changed)
-        fflush(stdout);
+        restore_input_cursor(input_buffers, input_count);
 }
 
 void print_input_info(input_buffer *input_buffers, size_t input_count)
@@ -158,6 +158,26 @@ void print_input_info(input_buffer *input_buffers, size_t input_count)
         else
             printf("%s: ", input_buffers[i].name);
     }
+    restore_input_cursor(input_buffers, input_count);
+    fflush(stdout);
+}
+
+void restore_input_cursor(input_buffer *input_buffers, size_t input_count)
+{
+    if (input_buffers == NULL || input_count == 0 ||
+        info_curs[CUR_INPUT].row < 0 || info_curs[CUR_INPUT].col < 0)
+        return;
+
+    size_t input_index = cur_buff < input_count ? cur_buff : input_count - 1;
+    input_buffer *input = &input_buffers[input_index];
+    int column = info_curs[CUR_INPUT].col + 1;
+    if (input->name != NULL)
+        column += (int)strlen(input->name);
+    column += 2;
+    if (input->show)
+        column += (int)strnlen(input->buffer, sizeof(input->buffer));
+
+    move(info_curs[CUR_INPUT].row + (int)input_index, column);
     fflush(stdout);
 }
 

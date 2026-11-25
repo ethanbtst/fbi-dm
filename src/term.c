@@ -189,10 +189,12 @@ void key_loop(input_buffer *input_buffers, size_t input_count)
 
         case KEY_LEFT:
             update_session(1);
+            restore_input_cursor(input_buffers, input_count);
             break;
 
         case KEY_RIGHT:
             update_session(-1);
+            restore_input_cursor(input_buffers, input_count);
             break;
 
         case KEY_F1:
