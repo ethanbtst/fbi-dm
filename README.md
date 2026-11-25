@@ -1,11 +1,11 @@
 <div align="center">
-	<h1 style="margin: 0">
-		fbi-dm
-	</h1>
+    <h1 style="margin: 0">
+        fbi-dm
+    </h1>
 </div>
 
 <div align="center">
-	Framebuffer image/info display manager
+    Framebuffer image/info display manager
 </div>
 </br>
 
@@ -54,8 +54,8 @@ is slow).
 
 Config options: 
 ```
-small_pic 		= path to image
-big_pic   		= distro or path to image
+small_pic       = path to image
+big_pic         = distro or path to image
 small_max_h     = maximum small image height in pixels
 small_max_w     = maximum small image width in pixels
 big_max_h       = maximum big image height in pixels
@@ -63,13 +63,13 @@ big_max_w       = maximum big image width in pixels
 spin            = bool
 rotation_period = seconds per full rotation
 
-top_text  		= string
-hostname  		= bool
-kernel    		= bool
-date      		= strftime format
-time      		= strftime format
-battery			= bool
-brightness		= bool
+top_text        = string
+hostname        = bool
+kernel          = bool
+date            = strftime format
+time            = strftime format
+battery         = bool
+brightness      = bool
 ```
 
 ## Todo
