@@ -174,9 +174,9 @@ int main()
 
     // Image stuff
     if (!load_texture(&small_img, opt_small_pic))
-        load_texture(&small_img, "/opt/fbi-dm/img/linux_logo.png");
+        load_texture(&small_img, "/etc/fbi-dm/img/linux_logo.png");
     if (!load_texture(&large_img, opt_big_pic))
-        load_texture(&large_img, "/opt/fbi-dm/img/fbi.png");
+        load_texture(&large_img, "/etc/fbi-dm/img/fbi.png");
 
     if (!resize_texture(&small_img, opt_small_max_w, opt_small_max_h) ||
         !resize_texture(&large_img, opt_big_max_w, opt_big_max_h)) {

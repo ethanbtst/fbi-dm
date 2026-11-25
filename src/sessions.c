@@ -239,7 +239,7 @@ void start_session(struct passwd *pw, const session *selected)
 
 int get_session_index(int session_count)
 {
-    FILE *fd = fopen("/opt/fbi-dm/index.txt", "r");
+    FILE *fd = fopen("/etc/fbi-dm/index.txt", "r");
     if (!fd)
         return -1;
 
@@ -255,7 +255,7 @@ int get_session_index(int session_count)
 
 void set_session_index(int session_cur)
 {
-    FILE *fd = fopen("/opt/fbi-dm/index.txt", "w");
+    FILE *fd = fopen("/etc/fbi-dm/index.txt", "w");
     if (!fd)
         return;
 
