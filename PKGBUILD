@@ -22,7 +22,7 @@ pkgver() {
 build() {
 	cd "$srcdir/${pkgname%-git}"
 	make CC="${CC:-gcc}" \
-		CFLAGS="${CFLAGS} -Wall -Wextra -Iinclude -pthread" \
+		CFLAGS="${CFLAGS} -Wall -Wextra -Iinclude -pthread -O3 -march=native -flto -mtune=native -ffast-math" \
 		LDFLAGS="${LDFLAGS} -pthread"
 }
 

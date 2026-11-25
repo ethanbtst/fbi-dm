@@ -6,7 +6,7 @@ CDIR = src
 IDIR = include
 BDIR = build
 
-CFLAGS := -Wall -Wextra -I$(IDIR) -pthread -O3 
+CFLAGS := -Wall -Wextra -I$(IDIR) -pthread -O3 -march=native -flto -mtune=native -ffast-math
 DEBUG_FLAGS := -Wall -Wextra -g -pthread
 LDLIBS := -lm -lpam
 
