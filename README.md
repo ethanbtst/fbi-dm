@@ -10,7 +10,7 @@
 </div>
 
 ## Why do this?
-I saw this post [reddit post](https://www.reddit.com/r/Gentoo/comments/1g63itl/\
+I saw this reddit [post](https://www.reddit.com/r/Gentoo/comments/1g63itl/\
 does_anyone_know_how_to_recreate_this/) that showed a neat little image and prompt
 during the boot process. As a Touhou fan and someone who likes to make things look
 the way I want I made this.
@@ -66,4 +66,3 @@ brightness		= bool
 
 ## Todo
 - Try using DRM for KMSCON support?
-- Anything else I find cool (gifs/animations)
